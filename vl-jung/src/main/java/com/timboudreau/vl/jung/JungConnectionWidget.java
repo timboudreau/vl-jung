@@ -1,4 +1,29 @@
-package com.timboudreau.vl.demo;
+/* 
+ * Copyright (c) 2013, Tim Boudreau
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.timboudreau.vl.jung;
 
 import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.graph.Graph;
@@ -99,32 +124,34 @@ public class JungConnectionWidget<V, E> extends Widget {
     }
 
     private Shape getShape() {
+        JungScene<V,E> scene = (JungScene<V,E>) getScene();
+        
         Graph<V, E> graph = getGraph();
         Context<Graph<V, E>, E> c = Context.getInstance(graph, edge);
         Shape edgeShape = transformer.transform(c);
 
         Pair<V> nodes = graph.getEndpoints(edge);
-        Layout<V, E> layout = ((JungScene) getScene()).layout;
+        Layout<V, E> layout = scene.layout;
 
-        Widget w1 = ((JungScene) getScene()).findWidget(nodes.getFirst());
+        Widget w1 = scene.findWidget(nodes.getFirst());
         Rectangle r1 = w1.getClientArea();
-        Widget w2 = ((JungScene) getScene()).findWidget(nodes.getSecond());
+        Widget w2 = scene.findWidget(nodes.getSecond());
         Rectangle r2 = w2.getClientArea();
 
         Point2D firstLoc = layout.transform(nodes.getFirst());
         Point2D secondLoc = layout.transform(nodes.getSecond());
-        if (r1 != null) {
-            r1.x = 0;
-            r1.y = 0;
-            firstLoc = new Point2D.Double(firstLoc.getX() + (double) r1.getCenterX(),
-                    firstLoc.getY() + (double) r1.getCenterY());
-        }
-        if (r2 != null) {
-            r2.x = 0;
-            r2.y = 0;
-            secondLoc = new Point2D.Double(secondLoc.getX() + (double) r2.getCenterX(),
-                    secondLoc.getY() + (double) r2.getCenterY());
-        }
+//        if (r1 != null) {
+//            r1.x = 0;
+//            r1.y = 0;
+//            firstLoc = new Point2D.Double(firstLoc.getX() + (double) r1.getCenterX(),
+//                    firstLoc.getY() + (double) r1.getCenterY());
+//        }
+//        if (r2 != null) {
+//            r2.x = 0;
+//            r2.y = 0;
+//            secondLoc = new Point2D.Double(secondLoc.getX() + (double) r2.getCenterX(),
+//                    secondLoc.getY() + (double) r2.getCenterY());
+//        }
 
         float x1 = (float) firstLoc.getX();
         float y1 = (float) firstLoc.getY();

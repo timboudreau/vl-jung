@@ -23,54 +23,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.timboudreau.vl.jung.extensions;
+package com.timboudreau.vl.jung;
+
+import java.util.Set;
+import org.netbeans.api.visual.model.ObjectSceneEvent;
+import org.netbeans.api.visual.model.ObjectSceneListener;
+import org.netbeans.api.visual.model.ObjectState;
 
 /**
+ * Missing from VL's API;  saves on verbosity
  *
  * @author Tim Boudreau
  */
-public enum States {
-    SELECTED, HOVERED, CONNECTED_TO_SELECTION, INDIRECTLY_CONNECTED_TO_SELECTION, UNRELATED_TO_SELECTION;
+public abstract class ObjectSceneAdapter implements ObjectSceneListener {
 
-    private float clamp(float flt) {
-        return Math.max(0F, Math.min(1.0F, flt));
+    @Override
+    public void objectAdded(ObjectSceneEvent event, Object addedObject) {
     }
 
-    private float rotate(float flt, float adj, float dir) {
-        adj *= dir;
-        flt += adj;
-        if (flt < 0F) {
-            flt = 1F - flt;
-        } else if (flt > 1F) {
-            flt -= 1F;
-        }
-        return clamp(flt);
+    @Override
+    public void objectRemoved(ObjectSceneEvent event, Object removedObject) {
     }
 
-    void adjust(float dir, float[] hsb) {
-        switch (this) {
-            case SELECTED:
-                hsb[1] = dir >= 1 ? 0.75F : 0.25F;
-                break;
-            case HOVERED:
-                hsb[0] = rotate(hsb[0], 0.10F, -dir);
-                hsb[1] = clamp(hsb[1] + 0.1F);
-                break;
-            case CONNECTED_TO_SELECTION:
-                hsb[0] = rotate(hsb[0], 0.05F, dir);
-                hsb[1] = 0.35F;
-                hsb[2] = clamp(hsb[2] + (-dir * 0.25F));
-                break;
-            case INDIRECTLY_CONNECTED_TO_SELECTION:
-                hsb[0] = rotate(hsb[0], 0.05F, dir);
-                hsb[1] = 0.25F;
-                hsb[2] = clamp(hsb[2] + (dir * 0.1F));
-                break;
-            case UNRELATED_TO_SELECTION:
-                hsb[1] = 0.1F;
-                hsb[2] = clamp(hsb[2] + 0.25F);
-                break;
-        }
+    @Override
+    public void objectStateChanged(ObjectSceneEvent event, Object changedObject, ObjectState previousState, ObjectState newState) {
     }
-    
+
+    @Override
+    public void selectionChanged(ObjectSceneEvent event, Set<Object> previousSelection, Set<Object> newSelection) {
+    }
+
+    @Override
+    public void highlightingChanged(ObjectSceneEvent event, Set<Object> previousHighlighting, Set<Object> newHighlighting) {
+    }
+
+    @Override
+    public void hoverChanged(ObjectSceneEvent event, Object previousHoveredObject, Object newHoveredObject) {
+    }
+
+    @Override
+    public void focusChanged(ObjectSceneEvent event, Object previousFocusedObject, Object newFocusedObject) {
+    }
 }

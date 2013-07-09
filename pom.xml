@@ -10,12 +10,14 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.version>RELEASE731</netbeans.version>
+        <jung.version>2.0.1</jung.version>
     </properties>
     <modules>
         <module>vl-jung</module>
         <module>vl-jung-extensions</module>
-    <module>vl-jung-demo</module>
-  </modules>
+        <module>vl-jung-demo</module>
+        <module>vl-jung-nbm</module>
+    </modules>
     <repositories>
         <repository>
             <id>netbeans</id>
@@ -74,17 +76,17 @@
         <dependency>
             <groupId>net.sf.jung</groupId>
             <artifactId>jung-api</artifactId>
-            <version>2.0.1</version>
+            <version>${jung.version}</version>
         </dependency>
         <dependency>
             <groupId>net.sf.jung</groupId>
             <artifactId>jung-graph-impl</artifactId>
-            <version>2.0.1</version>
+            <version>${jung.version}</version>
         </dependency>
         <dependency>
             <groupId>net.sf.jung</groupId>
             <artifactId>jung-visualization</artifactId>
-            <version>2.0.1</version>
+            <version>${jung.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -102,6 +104,6 @@
             <artifactId>org-netbeans-api-visual</artifactId>
             <version>${netbeans.version}</version>
             <type>jar</type>
-        </dependency>                
-    </dependencies>    
+        </dependency>
+    </dependencies>
 </project>

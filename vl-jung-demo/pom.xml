@@ -27,4 +27,7 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+    <properties>
+        <netbeans.hint.license>bsd</netbeans.hint.license>
+    </properties>
 </project>

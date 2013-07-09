@@ -10,7 +10,7 @@
     <groupId>com.timboudreau</groupId>
     <artifactId>vl-jung-extensions</artifactId>
     <version>1.0</version>
-    <name>vl-jung-extensions</name>
+    <name>Visual Library Jung Base Classes</name>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>

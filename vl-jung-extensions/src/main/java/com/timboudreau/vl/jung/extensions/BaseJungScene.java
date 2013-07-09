@@ -1,9 +1,34 @@
+/* 
+ * Copyright (c) 2013, Tim Boudreau
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.timboudreau.vl.jung.extensions;
 
-import com.timboudreau.vl.jung.extensions.States;
-import com.timboudreau.vl.demo.JungConnectionWidget;
-import com.timboudreau.vl.demo.JungScene;
-import com.timboudreau.vl.demo.RingsWidget;
+import com.timboudreau.vl.jung.JungConnectionWidget;
+import com.timboudreau.vl.jung.JungScene;
+import com.timboudreau.vl.jung.ObjectSceneAdapter;
+import com.timboudreau.vl.jung.RingsWidget;
 import static com.timboudreau.vl.jung.extensions.States.CONNECTED_TO_SELECTION;
 import static com.timboudreau.vl.jung.extensions.States.HOVERED;
 import static com.timboudreau.vl.jung.extensions.States.INDIRECTLY_CONNECTED_TO_SELECTION;
@@ -11,18 +36,14 @@ import static com.timboudreau.vl.jung.extensions.States.SELECTED;
 import static com.timboudreau.vl.jung.extensions.States.UNRELATED_TO_SELECTION;
 import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
 import edu.uci.ics.jung.algorithms.layout.Layout;
-import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
-import edu.uci.ics.jung.graph.util.Context;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Shape;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import javax.swing.JComponent;
-import org.apache.commons.collections15.Transformer;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.anchor.Anchor;
@@ -30,47 +51,73 @@ import org.netbeans.api.visual.anchor.AnchorFactory;
 import org.netbeans.api.visual.layout.LayoutFactory;
 import org.netbeans.api.visual.model.ObjectSceneEvent;
 import org.netbeans.api.visual.model.ObjectSceneEventType;
-import org.netbeans.api.visual.model.ObjectSceneListener;
 import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.ConnectionWidget;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.netbeans.api.visual.widget.general.IconNodeWidget;
 
-public class SimpleJungScene<N, E> extends JungScene<N, E> {
+/**
+ * A convenience base class for JUNG scenes which draws connections and 
+ * handles layers correctly.
+ * 
+ * @author Tim Boudreau
+ * @param <N>
+ * @param <E> 
+ */
+public class BaseJungScene<N, E> extends JungScene<N, E> {
 
-    private final LayerWidget mainLayer = new LayerWidget(this);
-    private final LayerWidget connectionLayer = new LayerWidget(this);
-    private final LayerWidget selectionLayer = new LayerWidget(this);
-    private final HoverHandler hover = new HoverHandler();
-    private final Widget decorationLayer = new RingsWidget(this);
+    protected final LayerWidget mainLayer = new LayerWidget(this);
+    protected final LayerWidget connectionLayer = new LayerWidget(this);
+    protected final LayerWidget selectionLayer = new LayerWidget(this);
+    private final HoverAndSelectionHandler hover = new HoverAndSelectionHandler();
+    protected final Widget decorationLayer = new RingsWidget(this);
     private final GraphTheme colors;
+    private WidgetAction scrollZoom;
     private WidgetAction edgeClickSelect;
     private Dimension lastSize = new Dimension();
 
-    public SimpleJungScene(ObservableGraph<N, E> graph, Layout layout) throws IOException {
+    public BaseJungScene(ObservableGraph<N, E> graph, Layout layout) throws IOException {
         super(graph, layout);
         colors = createColors();
+        // Selection layer is behind everything
         addChild(selectionLayer);
+        // Rings also drawn behind everything but the selection
         addChild(decorationLayer);
+        // Connections are drawn below the node widgets
         addChild(connectionLayer);
+        // The layer where node widgets live
         addChild(mainLayer);
 
+        // Use the built in rectangular selection action
         getActions().addAction(ActionFactory.createRectangularSelectAction(this,
                 selectionLayer));
 
+        // Set some layouts
         connectionLayer.setLayout(LayoutFactory.createAbsoluteLayout());
         mainLayer.setLayout(LayoutFactory.createAbsoluteLayout());
+        // Zoom on scroll by default
         getActions().addAction(createScrollWheelAction());
+        
+        // Add the listener which will notice when we hover and update
+        // the node color
         addObjectSceneListener(hover, ObjectSceneEventType.OBJECT_HOVER_CHANGED,
                 ObjectSceneEventType.OBJECT_SELECTION_CHANGED);
     }
-    
+
+    /**
+     * Create a color theme.  The default one starts with one color and
+     * modifies it to portray different selection states.
+     * @return A theme
+     */
     protected GraphTheme createColors() {
         return new GraphThemeImpl();
     }
 
-    public void relayout() {
+    /**
+     * Re-layout the graph
+     */
+    public void relayout(boolean animate) {
         JComponent vw = getView();
         if (vw != null) {
             try {
@@ -79,10 +126,11 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
                     layout.setSize(size);
                 }
             } catch (UnsupportedOperationException e) {
-                //not supported by layout
+                // not supported by some graph layouts, and they tell us
+                // in an ugly way
             }
         }
-        super.performLayout();
+        super.performLayout(animate);
     }
 
     protected Widget createNodeWidget(N node) {
@@ -90,20 +138,21 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
         result.setLabel(node + "");
         return result;
     }
-
-    @Override
-    protected Widget attachNodeWidget(final N node) {
-//        IconNodeWidget widget = new CompositeIconNodeWidget(this);
-//        DemoWidget widget = new DemoWidget(this);
-        Widget widget = createNodeWidget(node);
-//        widget.setImage(icon);
-        widget.setBackground(colors.getBackground());
-        widget.setForeground(colors.getForeground());
+    
+    protected void attachActionsToNodeWidget(Widget widget) {
         widget.getActions().addAction(createNodeMoveAction());
         widget.getActions().addAction(createObjectHoverAction());
         widget.getActions().addAction(createSelectAction());
         widget.getActions().addAction(createSelectByClickAction());
+    }
 
+    @Override
+    protected Widget attachNodeWidget(final N node) {
+        Widget widget = createNodeWidget(node);
+        // Set up the colors and actions
+        widget.setBackground(colors.getBackground());
+        widget.setForeground(colors.getForeground());
+        attachActionsToNodeWidget(widget);
         mainLayer.addChild(widget);
         validate();
         return widget;
@@ -111,7 +160,6 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
 
     protected Widget createEdgeWidget(E edge) {
         JungConnectionWidget w = JungConnectionWidget.createQuadratic(this, edge);
-        w.setToolTipText(edge + "");
         return w;
     }
 
@@ -143,6 +191,7 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
     @Override
     protected void attachEdgeSourceAnchor(E edge, N oldSourceNode, N sourceNode) {
         Widget w = findWidget(edge);
+        // Not the case by default, but could be overridden
         if (w instanceof ConnectionWidget) {
             Widget sourceNodeWidget = findWidget(sourceNode);
             Anchor sourceAnchor = AnchorFactory.createCenterAnchor(sourceNodeWidget);
@@ -154,6 +203,7 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
     @Override
     protected void attachEdgeTargetAnchor(E edge, N oldTargetNode, N targetNode) {
         Widget w = findWidget(edge);
+        // Not the case by default, but could be overridden
         if (w instanceof ConnectionWidget) {
             Widget targetNodeWidget = findWidget(targetNode);
             Anchor targetAnchor = AnchorFactory.createCenterAnchor(targetNodeWidget);
@@ -162,16 +212,31 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
         }
     }
 
+    /**
+     * Called when an edge stops being hovered
+     * @param edge The edge
+     * @param w The widget
+     */
     protected void onEdgeUnhover(E edge, Widget w) {
         Color c = colors.getEdgeColor();
         getSceneAnimator().animateForegroundColor(w, c);
     }
 
+    /**
+     * Called when an edge becomes hovered
+     * @param edge The edge
+     * @param w The widget
+     */
     protected void onEdgeHover(E edge, Widget w) {
-        Color c = colors.getEdgeColor(States.HOVERED);
+        Color c = colors.getEdgeColor(HOVERED);
         getSceneAnimator().animateForegroundColor(w, c);
     }
 
+    /**
+     * Called when a node stops being hovered
+     * @param n The node
+     * @param w The widget
+     */
     protected void onNodeUnhover(N n, Widget w) {
         ObjectState state = getObjectState(n);
         boolean hasSelection = !getSelectedObjects().isEmpty();
@@ -187,6 +252,11 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
         getSceneAnimator().animateBackgroundColor(w, colors.getBackground(states));
     }
 
+    /**
+     * Called when a node starts being hovered
+     * @param n The node
+     * @param w The widget
+     */
     protected void onNodeHover(N n, Widget w) {
         ObjectState state = getObjectState(n);
         boolean hasSelection = !getSelectedObjects().isEmpty();
@@ -206,45 +276,95 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
         getSceneAnimator().animateBackgroundColor(w, colors.getBackground(states));
     }
 
+    /**
+     * Called when the selection is cleared, once for every node widget
+     * @param w The widget
+     * @param n The node
+     */
     protected void onSelectionCleared(Widget w, N n) {
         getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(null, n)));
         getSceneAnimator().animateForegroundColor(w, colors.getForeground(statesFor(null, n)));
     }
 
+    /**
+     * Called when the selection is cleared, once for every edge widget
+     * @param w The widget
+     * @param e The edge
+     */
     protected void onEdgeSelectionCleared(Widget w, E e) {
         getSceneAnimator().animateForegroundColor(w, colors.getEdgeColor(statesFor(null, e)));
     }
 
-    protected void onNodeSelected(Widget w, Object o) {
-        getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(SELECTED, o)));
-        getSceneAnimator().animateForegroundColor(w, colors.getForeground(statesFor(SELECTED, o)));
+    /**
+     * Called when a node becomes selected
+     * @param w The widget
+     * @param n The node
+     */
+    protected void onNodeSelected(Widget w, N n) {
+        getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(SELECTED, n)));
+        getSceneAnimator().animateForegroundColor(w, colors.getForeground(statesFor(SELECTED, n)));
     }
 
-    protected void onNodeConnectedToSelection(Widget w, N opp) {
+    /**
+     * Called when a node connected to this one was selected assuming it is not
+     * also selected
+     * @param w The widget
+     * @param n The node
+     */
+    protected void onNodeConnectedToSelection(Widget w, N n) {
         getSceneAnimator().animateBackgroundColor(w,
-                colors.getBackground(statesFor(CONNECTED_TO_SELECTION, opp)));
+                colors.getBackground(statesFor(CONNECTED_TO_SELECTION, n)));
         getSceneAnimator().animateForegroundColor(w,
-                colors.getForeground(statesFor(CONNECTED_TO_SELECTION, opp)));
+                colors.getForeground(statesFor(CONNECTED_TO_SELECTION, n)));
     }
 
-    protected void onNodeIndirectlyConnectedToSelection(Widget w, N opp) {
-        getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(INDIRECTLY_CONNECTED_TO_SELECTION, opp)));
-        getSceneAnimator().animateForegroundColor(w, colors.getForeground(statesFor(INDIRECTLY_CONNECTED_TO_SELECTION, opp)));
+    /**
+     * Called when a node connected to this one is connected to the selected node,
+     * assuming this one is not selected or directly connected to the selected node
+     * @param w The widget
+     * @param n The node 
+     */
+    protected void onNodeIndirectlyConnectedToSelection(Widget w, N n) {
+        getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(INDIRECTLY_CONNECTED_TO_SELECTION, n)));
+        getSceneAnimator().animateForegroundColor(w, colors.getForeground(statesFor(INDIRECTLY_CONNECTED_TO_SELECTION, n)));
     }
 
-    protected void onNodeUnrelatedToSelection(Widget w, Object o) {
-        getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(UNRELATED_TO_SELECTION, o)));
-        getSceneAnimator().animateForegroundColor(w, colors.getForeground(statesFor(UNRELATED_TO_SELECTION, o)));
+    /**
+     * Called when a node becomes unconnected to any selected node due to a 
+     * selection change
+     * @param w The widget
+     * @param n The node
+     */
+    protected void onNodeUnrelatedToSelection(Widget w, N n) {
+        getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(UNRELATED_TO_SELECTION, n)));
+        getSceneAnimator().animateForegroundColor(w, colors.getForeground(statesFor(UNRELATED_TO_SELECTION, n)));
     }
 
+    /**
+     * Called when an edge becomes connected to the selection due to a selection
+     * change
+     * @param e The edge
+     */
     protected void onEdgeConnectedToSelection(E e) {
         getSceneAnimator().animateForegroundColor(findWidget(e), colors.getEdgeColor(statesFor(CONNECTED_TO_SELECTION, e)));
     }
 
+    /**
+     * Called when an edge becomes connected to a node which is connected to the
+     * selection but not selected itself, due to a selection change
+     * @param e The edge
+     */
     protected void onEdgeIndirectlyConnectedToSelection(E e) {
         getSceneAnimator().animateForegroundColor(findWidget(e), colors.getEdgeColor(statesFor(INDIRECTLY_CONNECTED_TO_SELECTION, e)));
     }
 
+    /**
+     * Get the set of states which apply to this object, in terms of an array
+     * of States.
+     * @param curr A state to include in the reuslt if non-null
+     * @param o The object - may be an edge or node
+     * @return 
+     */
     public States[] statesFor(States curr, Object o) {
         ObjectState st = getObjectState(o);
         if (st.isHovered()) {
@@ -254,7 +374,7 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
         }
     }
 
-    private class HoverHandler implements ObjectSceneListener {
+    private class HoverAndSelectionHandler extends ObjectSceneAdapter {
 
         @Override
         public void hoverChanged(ObjectSceneEvent event, Object previousHoveredObject, Object newHoveredObject) {
@@ -283,20 +403,9 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
         }
 
         @Override
-        public void objectAdded(ObjectSceneEvent event, Object addedObject) {
-        }
-
-        @Override
-        public void objectRemoved(ObjectSceneEvent event, Object removedObject) {
-        }
-
-        @Override
-        public void objectStateChanged(ObjectSceneEvent event, Object changedObject, ObjectState previousState, ObjectState newState) {
-        }
-
-        @Override
         public void selectionChanged(ObjectSceneEvent event, Set<Object> previousSelection, Set<Object> newSelection) {
             if (newSelection.isEmpty()) {
+                // Special case the selection being empty
                 for (N n : getNodes()) {
                     Widget w = findWidget(n);
                     onSelectionCleared(w, n);
@@ -309,21 +418,26 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
                 }
                 return;
             }
+            // Find all the nodes which used to be selected but are not anymore
             Set<Object> noLongerSelected = new HashSet<>(previousSelection);
             noLongerSelected.removeAll(newSelection);
 
+            // Get the set of all nodes we know about in the sscene
             Set<Object> remainingNodes = new HashSet<Object>(getNodes());
 
+            // Get the set of all edges we know about in the scene
             Set<E> otherEdges = new HashSet<>(getEdges());
             Set<E> closeEdges = new HashSet<>();
             Set<E> farEdges = new HashSet<>();
 
+            // Walk the graph, finding all the relevant edges and nodes and
+            // their selection state
             Set<Object> newlySelected = new HashSet<>(newSelection);
             newlySelected.removeAll(previousSelection);
             for (Object o : newlySelected) {
                 remainingNodes.remove(o);
                 Widget w = findWidget(o);
-                onNodeSelected(w, o);
+                onNodeSelected(w, (N) o);
             }
             Set<N> connectedNodes = new HashSet<>();
             for (Object o : newlySelected) {
@@ -360,7 +474,7 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
             }
             for (Object o : remainingNodes) {
                 Widget w = findWidget(o);
-                onNodeUnrelatedToSelection(w, o);
+                onNodeUnrelatedToSelection(w, (N) o);
             }
             for (E e : closeEdges) {
                 onEdgeConnectedToSelection(e);
@@ -372,14 +486,6 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
                 onEdgeSelectionCleared(findWidget(e), e);
             }
             mainLayer.repaint();
-        }
-
-        @Override
-        public void highlightingChanged(ObjectSceneEvent event, Set<Object> previousHighlighting, Set<Object> newHighlighting) {
-        }
-
-        @Override
-        public void focusChanged(ObjectSceneEvent event, Object previousFocusedObject, Object newFocusedObject) {
         }
     }
 
@@ -404,8 +510,6 @@ public class SimpleJungScene<N, E> extends JungScene<N, E> {
             return WidgetAction.State.REJECTED;
         }
     }
-
-    private WidgetAction scrollZoom;
 
     protected WidgetAction createScrollWheelAction() {
         if (scrollZoom == null) {
