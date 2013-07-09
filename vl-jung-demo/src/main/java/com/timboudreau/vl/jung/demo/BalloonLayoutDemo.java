@@ -81,32 +81,29 @@ public class BalloonLayoutDemo {
         graph.addEdge(edgeFactory.create(), "D1", "G6");
         graph.addEdge(edgeFactory.create(), "D1", "G7");
 
-//        graph.addEdge(edgeFactory.create(), "A0", "HA1");
-//        graph.addEdge(edgeFactory.create(), "A0", "HA2");
-//        graph.addEdge(edgeFactory.create(), "A0", "HA3");
-
-//       	graph.addEdge(edgeFactory.create(), "HA3", "I1");
-//       	graph.addEdge(edgeFactory.create(), "HA3", "I2");
-//        
-//       	graph.addEdge(edgeFactory.create(), "I2", "J1");
-
-        // uncomment this to make it a Forest:
-//       	graph.addVertex("K0");
-//       	graph.addEdge(edgeFactory.create(), "K0", "K1");
-//       	graph.addEdge(edgeFactory.create(), "K0", "K2");
-//       	graph.addEdge(edgeFactory.create(), "K0", "K3");
-//       	
-//       	graph.addVertex("J0");
-//    	graph.addEdge(edgeFactory.create(), "J0", "J1");
-//    	graph.addEdge(edgeFactory.create(), "J0", "J2");
-//    	graph.addEdge(edgeFactory.create(), "J1", "J4");
-//    	graph.addEdge(edgeFactory.create(), "J2", "J3");
-//        
-//    	graph.addEdge(edgeFactory.create(), "J2", "J5");
-//    	graph.addEdge(edgeFactory.create(), "J4", "J6");
-//    	graph.addEdge(edgeFactory.create(), "J4", "J7");
-//    	graph.addEdge(edgeFactory.create(), "J3", "J8");
-//    	graph.addEdge(edgeFactory.create(), "J6", "B9");
+        graph.addEdge(edgeFactory.create(), "A0", "HA1");
+        graph.addEdge(edgeFactory.create(), "A0", "HA2");
+        graph.addEdge(edgeFactory.create(), "A0", "HA3");
+       	graph.addEdge(edgeFactory.create(), "HA3", "I1");
+       	graph.addEdge(edgeFactory.create(), "HA3", "I2");
+        
+       	graph.addEdge(edgeFactory.create(), "I2", "J1");
+       	graph.addVertex("K0");
+       	graph.addEdge(edgeFactory.create(), "K0", "K1");
+       	graph.addEdge(edgeFactory.create(), "K0", "K2");
+       	graph.addEdge(edgeFactory.create(), "K0", "K3");
+       	
+       	graph.addVertex("J0");
+    	graph.addEdge(edgeFactory.create(), "J0", "J1");
+    	graph.addEdge(edgeFactory.create(), "J0", "J2");
+    	graph.addEdge(edgeFactory.create(), "J1", "J4");
+    	graph.addEdge(edgeFactory.create(), "J2", "J3");
+        
+    	graph.addEdge(edgeFactory.create(), "J2", "J5");
+    	graph.addEdge(edgeFactory.create(), "J4", "J6");
+    	graph.addEdge(edgeFactory.create(), "J4", "J7");
+    	graph.addEdge(edgeFactory.create(), "J3", "J8");
+    	graph.addEdge(edgeFactory.create(), "J6", "B9");
         return graph;
     }
 }

@@ -25,6 +25,7 @@
  */
 package com.timboudreau.vl.jung.demo;
 
+import com.timboudreau.vl.jung.demo.layout.XLayout;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
 import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
 import edu.uci.ics.jung.algorithms.layout.CircleLayout;
@@ -34,9 +35,11 @@ import edu.uci.ics.jung.algorithms.layout.FRLayout2;
 import edu.uci.ics.jung.algorithms.layout.ISOMLayout;
 import edu.uci.ics.jung.algorithms.layout.KKLayout;
 import edu.uci.ics.jung.algorithms.layout.Layout;
+import edu.uci.ics.jung.algorithms.layout.RadialTreeLayout;
 import edu.uci.ics.jung.algorithms.layout.SpringLayout;
 import edu.uci.ics.jung.algorithms.layout.SpringLayout2;
 import edu.uci.ics.jung.algorithms.layout.TreeLayout;
+import edu.uci.ics.jung.algorithms.util.IterativeContext;
 import edu.uci.ics.jung.graph.DelegateForest;
 import edu.uci.ics.jung.graph.Forest;
 import edu.uci.ics.jung.graph.Graph;
@@ -51,15 +54,20 @@ import java.awt.Insets;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -106,14 +114,20 @@ public class App {
         mdl.addElement(new KKLayout(g));
         mdl.addElement(layout);
         mdl.addElement(new BalloonLayout(forest));
+        mdl.addElement(new RadialTreeLayout(forest));
+        mdl.addElement(new CircleLayout(g));
         mdl.addElement(new FRLayout(g));
         mdl.addElement(new FRLayout2(g));
         mdl.addElement(new ISOMLayout(g));
         mdl.addElement(new SpringLayout(g));
         mdl.addElement(new SpringLayout2(g));
         mdl.addElement(new DAGLayout(g));
-        mdl.addElement(new CircleLayout(g));
+        mdl.addElement(new XLayout(g));
         mdl.setSelectedItem(layout);
+        final JCheckBox checkbox = new JCheckBox("Animate iterative layouts");
+        
+        scene.setLayoutAnimationFramesPerSecond(48);
+        
         final JComboBox<Layout> layouts = new JComboBox(mdl);
         layouts.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -127,7 +141,14 @@ public class App {
         layouts.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
-                scene.setGraphLayout((Layout) layouts.getSelectedItem(), true);
+                Layout layout = (Layout) layouts.getSelectedItem();
+                // These two layouts implement IterativeContext, but they do
+                // not evolve toward anything, they just randomly rearrange
+                // themselves.  So disable animation for these.
+                if (layout instanceof ISOMLayout || layout instanceof DAGLayout) {
+                    checkbox.setSelected(false);
+                }
+                scene.setGraphLayout(layout, true);
             }
         });
 
@@ -161,7 +182,9 @@ public class App {
         bar.add(shapesBox);
         jf.add(bar, BorderLayout.NORTH);
         bar.add(new MinSizePanel(scene.createSatelliteView()));
-
+        bar.setFloatable(false);
+        bar.setRollover(true);
+        
         final JLabel selectionLabel = new JLabel("<html>&nbsp;</html>");
         System.out.println("LOOKUP IS " + scene.getLookup());
         Lookup.Result<String> selectedNodes = scene.getLookup().lookupResult(String.class);
@@ -188,6 +211,15 @@ public class App {
         selectedNodes.allInstances();
         
         bar.add(selectionLabel);
+        
+        checkbox.setSelected(true);
+        checkbox.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                scene.setAnimateIterativeLayouts(checkbox.isSelected());
+            }
+        });
+        bar.add(checkbox);
 
 //        jf.setSize(jf.getGraphicsConfiguration().getBounds().width - 120, 700);
         jf.setSize(new Dimension(1280, 720));

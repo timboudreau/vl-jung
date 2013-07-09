@@ -102,6 +102,10 @@ public class JungConnectionWidget<V, E> extends Widget {
         assert stroke != null : "Stroke null";
         this.stroke = stroke;
     }
+    
+    public Stroke getStroke() {
+        return stroke;
+    }
 
     private Graph<V, E> getGraph() {
         JungScene<V, E> scene = (JungScene<V, E>) getScene();

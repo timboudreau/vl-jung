@@ -1,0 +1,2 @@
+OpenIDE-Module-Install: com/timboudreau/maven/dependency/graph/fork/Installer.class
+

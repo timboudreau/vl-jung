@@ -26,6 +26,7 @@
 package com.timboudreau.vl.jung;
 
 import edu.uci.ics.jung.algorithms.layout.Layout;
+import edu.uci.ics.jung.algorithms.util.IterativeContext;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.event.GraphEvent;
@@ -34,21 +35,25 @@ import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.graph.util.Pair;
 import java.awt.Point;
 import java.awt.Shape;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JComponent;
+import javax.swing.Timer;
 import org.apache.commons.collections15.Transformer;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.MoveProvider;
 import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.graph.GraphScene;
+import org.netbeans.api.visual.layout.SceneLayout;
 import org.netbeans.api.visual.model.ObjectSceneEvent;
 import org.netbeans.api.visual.model.ObjectSceneEventType;
-import org.netbeans.api.visual.model.ObjectSceneListener;
-import org.netbeans.api.visual.model.ObjectState;
 import org.netbeans.api.visual.widget.ConnectionWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.Lookup;
@@ -81,10 +86,15 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param graph A JUNG graph which will be used to provide the graph
      * @param layout A JUNG layout to be used as the initial layout
      */
+    @SuppressWarnings("unchecked")
     protected JungScene(Graph<N, E> graph, Layout layout) {
         this.graph = graph;
         this.layout = layout;
-        if (graph instanceof ObservableGraph) {
+        timer.setRepeats(true);
+        timer.setCoalesce(true);
+        timer.setInitialDelay(200);
+        timer.stop();
+        if (graph instanceof ObservableGraph<?, ?>) {
             ((ObservableGraph<N, E>) graph).addGraphEventListener(new GraphEventAdapter());
         }
         final InstanceContent content = new InstanceContent();
@@ -106,7 +116,6 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                 for (Object o : toAdd) {
                     content.add(o);
                 }
-                System.out.println("CONTENTS NOW " + lkp.lookupAll(String.class));
             }
         }, ObjectSceneEventType.OBJECT_SELECTION_CHANGED);
     }
@@ -158,12 +167,17 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      */
     @Override
     public JComponent createView() {
+        boolean was = initialized;
         if (!initialized) {
             initialized = true;
             sync();
             sceneLayout.performLayout();
         }
-        return super.createView();
+        JComponent view = super.createView();
+        if (!was && layout instanceof IterativeContext && animate) {
+            timer.start();
+        }
+        return view;
     }
 
     /**
@@ -175,12 +189,14 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
 
     /**
      * Re-layout the scene, optionally animating the node positions
-     * 
+     *
      * @param animate Animate the transition of node positions
      */
     public final void performLayout(boolean animate) {
-        sceneLayout.performLayout();
+//        sceneLayout.invokeLayout();
+        sceneLayout.performLayout(animate);
     }
+
     /**
      * Set the JUNG layout, triggering a re-layout of the scene
      *
@@ -189,12 +205,120 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      */
     public final void setGraphLayout(Layout<N, E> layout, boolean animate) {
         assert layout != null : "Layout null";
+        timer.stop();
         this.layout = layout;
-        // XXX animate optionally
         sceneLayout.performLayout(animate);
+        if (this.animate && layout instanceof IterativeContext && getView() != null) {
+            timer.start();
+        } else if (!this.animate && layout instanceof IterativeContext) {
+            // Fast forward it a bit
+            IterativeContext ctx = (IterativeContext) layout;
+            if (!ctx.done()) {
+                try {
+                    for (int i = 0; i < 100; i++) {
+                        ctx.step();
+                        if (ctx.done()) {
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, e);
+                }
+            }
+            sceneLayout.performLayout(true);
+            validate();
+            repaint();
+        }
     }
 
-    
+    private boolean animate = true;
+
+    /**
+     * Some JUNG layouts support iteratively evolving toward an optimal layout
+     * (where precomputing this is too expensive). If true, setting one of these
+     * layouts will trigger a timer that re-layouts the scene until the layout
+     * says it has reached an optimal state or this property is set to false.
+     *
+     * @return Whether or not to animate
+     */
+    public boolean isAnimateIterativeLayouts() {
+        return animate;
+    }
+
+    /**
+     * Some JUNG layouts support iteratively evolving toward an optimal layout
+     * (where precomputing this is too expensive). If true, setting one of these
+     * layouts will trigger a timer that re-layouts the scene until the layout
+     * says it has reached an optimal state or this property is set to false.
+     *
+     * @param val to animate or not
+     */
+    public void setAnimateIterativeLayouts(boolean val) {
+        boolean old = this.animate;
+        if (old != val) {
+            this.animate = val;
+            if (val && this.layout instanceof IterativeContext && getView() != null) {
+                timer.start();
+            } else if (!val) {
+                timer.stop();
+            }
+        }
+    }
+
+    /**
+     * Some JUNG layouts support iteratively evolving toward an optimal layout
+     * (where precomputing this is too expensive). This property sets the frame
+     * rate for animating them, in frames per second.
+     *
+     * @param fps Frames per second - must be >= 1
+     */
+    public void setLayoutAnimationFramesPerSecond(int fps) {
+        if (fps < 1) {
+            throw new IllegalArgumentException("Frame rate must be at least 1. "
+                    + "Use setAnimateIterativeLayouts() to disable animation.");
+        }
+        timer.setDelay(1000 / fps);
+    }
+
+    /**
+     * Some JUNG layouts support iteratively evolving toward an optimal layout
+     * (where precomputing this is too expensive). This is the frame rate for
+     * the animation timer (actual results may vary if the machine cannot keep
+     * up with the math involved).
+     *
+     * @return The requested frame rate
+     */
+    public int getAnimationFramesPerSecond() {
+        int delay = timer.getDelay();
+        return delay / 1000;
+    }
+
+    private ActionListener timerListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (!animate) {
+                return;
+            }
+            if (layout instanceof IterativeContext) {
+                IterativeContext c = (IterativeContext) layout;
+                try {
+                    c.step();
+                } catch (Exception ex) {
+                    // e.g. IllegalArgumentException: Unexpected mathematical result in FRLayout:calcPositions
+                    // Some layouts are buggy.
+                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, e);
+                }
+                if (c.done()) {
+                    timer.stop();
+                }
+                getSceneLayout().invokeLayout();
+                validate();
+                repaint();
+            }
+        }
+    };
+    private final Timer timer = new Timer(1000 / 24, timerListener);
+
     /**
      * Set the JUNG layout, triggering a re-layout of the scene
      *
@@ -289,12 +413,20 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         repaint();
     }
 
+    protected final MoveProvider createMoveProvider() {
+        return sceneLayout;
+    }
+
+    public SceneLayout getSceneLayout() {
+        return sceneLayout;
+    }
+
     /**
      * Adapter which implements SceneLayout and uses the layout logic of the
      * JUNG layout. Also acts as our MoveProvider which will tell the layout
      * about user-made changes to node positions, so these are remembered
      */
-    private class LayoutAdapter extends org.netbeans.api.visual.layout.SceneLayout implements MoveProvider {
+    private class LayoutAdapter extends SceneLayout implements MoveProvider {
 
         LayoutAdapter() {
             super(JungScene.this);
