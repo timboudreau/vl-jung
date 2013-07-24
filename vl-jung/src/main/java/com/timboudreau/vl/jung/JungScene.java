@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2013, Tim Boudreau
  * All rights reserved.
  *
@@ -37,6 +37,7 @@ import java.awt.Point;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,6 +58,7 @@ import org.netbeans.api.visual.model.ObjectSceneEventType;
 import org.netbeans.api.visual.widget.ConnectionWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.Lookup;
+import org.openide.util.Parameters;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
@@ -66,6 +68,9 @@ import org.openide.util.lookup.InstanceContent;
  * constructor; if the graph implements ObservableGraph, then the scene will
  * automatically update itself when the graph is modified; otherwise call
  * <code>sync()</code> when the graph is modified.
+ * <p/>
+ * To be pre-populated, subclasses should call init() at the end of their
+ * constructor.
  *
  * @author Tim Boudreau
  */
@@ -77,6 +82,11 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     private boolean initialized;
     private SelectByClickAction clickAction;
     private final GraphSelection selection = new GraphSelection<>(this);
+    private LayoutAnimationEvaluator evaluator = new LayoutAnimationEvaluator();
+    private boolean animate = true;
+    private final ActionListener timerListener = new TimerListener();
+    private int fastForwardIterations = 300;
+    private final Timer timer = new Timer(1000 / 24, timerListener);
     private final Lookup lkp;
 
     /**
@@ -175,7 +185,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }
         JComponent view = super.createView();
         if (!was && layout instanceof IterativeContext && animate) {
-            timer.start();
+            startAnimation();
         }
         return view;
     }
@@ -198,6 +208,27 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     }
 
     /**
+     * Set the number of pre-iterations to perform on layouts which implement
+     * IterativeContext, if <i>not</i> animating the layout with a timer.
+     * <p/>
+     * Some JUNG layouts implement IterativeContext and are expected to be
+     * re-laid out repeatedly until the system reaches a good state; the initial
+     * layout is often simply random placement of nodes.
+     * <p/>
+     * In the case that animation is off, we still want to display a good
+     * looking graph, so calls to setGraphLayout can automatically iterate the
+     * layout a bunch of steps immediately. Depending on how computationally
+     * expensive the layout is, and the number of nodes and edges in the graph,
+     * this could be slow, so we provide this way to limit the number of
+     * iterations.
+     *
+     * @param val The number of iterations; &lt;=0 equals none.
+     */
+    public final void setFastForwardIterations(int val) {
+        this.fastForwardIterations = val;
+    }
+
+    /**
      * Set the JUNG layout, triggering a re-layout of the scene
      *
      * @param layout The layout, may not be null
@@ -209,13 +240,13 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         this.layout = layout;
         sceneLayout.performLayout(animate);
         if (this.animate && layout instanceof IterativeContext && getView() != null) {
-            timer.start();
+            startAnimation();
         } else if (!this.animate && layout instanceof IterativeContext) {
             // Fast forward it a bit
             IterativeContext ctx = (IterativeContext) layout;
-            if (!ctx.done()) {
+            if (!ctx.done() && fastForwardIterations > 0) {
                 try {
-                    for (int i = 0; i < 100; i++) {
+                    for (int i = 0; i < fastForwardIterations; i++) {
                         ctx.step();
                         if (ctx.done()) {
                             break;
@@ -231,8 +262,6 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }
     }
 
-    private boolean animate = true;
-
     /**
      * Some JUNG layouts support iteratively evolving toward an optimal layout
      * (where precomputing this is too expensive). If true, setting one of these
@@ -241,7 +270,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      *
      * @return Whether or not to animate
      */
-    public boolean isAnimateIterativeLayouts() {
+    public final boolean isAnimateIterativeLayouts() {
         return animate;
     }
 
@@ -253,12 +282,12 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      *
      * @param val to animate or not
      */
-    public void setAnimateIterativeLayouts(boolean val) {
+    public final void setAnimateIterativeLayouts(boolean val) {
         boolean old = this.animate;
         if (old != val) {
             this.animate = val;
             if (val && this.layout instanceof IterativeContext && getView() != null) {
-                timer.start();
+                startAnimation();
             } else if (!val) {
                 timer.stop();
             }
@@ -272,7 +301,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      *
      * @param fps Frames per second - must be >= 1
      */
-    public void setLayoutAnimationFramesPerSecond(int fps) {
+    public final void setLayoutAnimationFramesPerSecond(int fps) {
         if (fps < 1) {
             throw new IllegalArgumentException("Frame rate must be at least 1. "
                     + "Use setAnimateIterativeLayouts() to disable animation.");
@@ -293,31 +322,14 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         return delay / 1000;
     }
 
-    private ActionListener timerListener = new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (!animate) {
-                return;
-            }
-            if (layout instanceof IterativeContext) {
-                IterativeContext c = (IterativeContext) layout;
-                try {
-                    c.step();
-                } catch (Exception ex) {
-                    // e.g. IllegalArgumentException: Unexpected mathematical result in FRLayout:calcPositions
-                    // Some layouts are buggy.
-                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, e);
-                }
-                if (c.done()) {
-                    timer.stop();
-                }
-                getSceneLayout().invokeLayout();
-                validate();
-                repaint();
-            }
-        }
-    };
-    private final Timer timer = new Timer(1000 / 24, timerListener);
+    /**
+     * Start the animation timer and reset the evaluator's count of
+     * insignificant changes.
+     */
+    private void startAnimation() {
+        evaluator.reset();
+        timer.start();
+    }
 
     /**
      * Set the JUNG layout, triggering a re-layout of the scene
@@ -326,6 +338,94 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      */
     public final void setGraphLayout(Layout<N, E> layout) {
         setGraphLayout(layout, false);
+    }
+
+    /**
+     * Returns an AutoCloseable which can be used in a try-with-resources loop
+     * to modify the graph and automatically sync the widgets on-screen with the
+     * nodes on close.
+     *
+     * @return A GraphMutator.
+     */
+    public final GraphMutator<N, E> modifyGraph() {
+        return new GraphMutator<N, E>(this);
+    }
+
+    /**
+     * Add a node to this graph. Use this method in place of
+     * <code>addNode()</code>. If the graph passed to this scene's constructor
+     * does not implement
+     * <code>ObservableGraph</code>, you will need to manually call
+     * <code>sync()</code> to update the scene from the graph (or use
+     * <code>GraphMutator</code> in a try-with-resources loop).
+     *
+     * @param node A node
+     */
+    public final void addGraphNode(N node) {
+        graph.addVertex(node);
+    }
+
+    /**
+     * Add an edge to this graph, associating it with the nodes it connects. If
+     * the graph passed to this scene's constructor does not implement
+     * <code>ObservableGraph</code>, you will need to manually call
+     * <code>sync()</code> to update the scene from the graph (or use
+     * <code>GraphMutator</code> in a try-with-resources loop).
+     *
+     * @param edge The edge
+     * @param source The source node
+     * @param target The target node
+     */
+    public final void addGraphEdge(E edge, N source, N target) {
+        graph.addEdge(edge, source, target);
+    }
+
+    public static final class GraphMutator<N, E> implements AutoCloseable {
+
+        private final JungScene<N, E> scene;
+
+        GraphMutator(JungScene<N, E> scene) {
+            this.scene = scene;
+        }
+
+        /**
+         * Add a node to this graph. Use this method in place of
+         * <code>addNode()</code>. If the graph passed to this scene's
+         * constructor does not implement
+         * <code>ObservableGraph</code>, you will need to manually call
+         * <code>sync()</code> to update the scene from the graph (or use
+         * <code>GraphMutator</code> in a try-with-resources loop).
+         *
+         * @param node A node
+         */
+        public void addGraphNode(N node) {
+            scene.addGraphNode(node);
+        }
+
+        /**
+         * Add an edge to this graph, associating it with the nodes it connects.
+         * If the graph passed to this scene's constructor does not implement
+         * <code>ObservableGraph</code>, you will need to manually call
+         * <code>sync()</code> to update the scene from the graph (or use
+         * <code>GraphMutator</code> in a try-with-resources loop).
+         *
+         * @param edge The edge
+         * @param source The source node
+         * @param target The target node
+         */
+        public void addGraphEdge(E edge, N source, N target) {
+            scene.addGraphEdge(edge, source, target);
+        }
+
+        /**
+         * Synchronizes the scene's graph's contents with the nodes the
+         * scene knows about.
+         */
+        @Override
+        public void close() {
+            scene.sync();
+            scene.performLayout(true);
+        }
     }
 
     /**
@@ -413,12 +513,48 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         repaint();
     }
 
+    /**
+     * Create a move provider which will update the JUNG layout as needed, so
+     * that user-dragged locations are not discarded by the layout, and dragging
+     * while animating works as expected.
+     *
+     * @return A move provider
+     */
     protected final MoveProvider createMoveProvider() {
         return sceneLayout;
     }
 
-    public SceneLayout getSceneLayout() {
+    /**
+     * Get the SceneLayout implementation which wrappers the JUNG layout and
+     * lays out the widgets
+     *
+     * @return A SceneLayout
+     */
+    public final SceneLayout getSceneLayout() {
         return sceneLayout;
+    }
+
+    /**
+     * Set the object which will decide when animated JUNG layouts have done
+     * everything useful they're going to do.
+     *
+     * @param eval An evaluator
+     * @see LayoutAnimationEvaluator
+     */
+    public void setLayoutAnimationEvaluator(LayoutAnimationEvaluator eval) {
+        Parameters.notNull("eval", eval);
+        this.evaluator = eval;
+    }
+
+    /**
+     * Get the object which decides when any animated JUNG layout has done
+     * everything useful it is going to do
+     *
+     * @return An evaluator
+     * @see LayoutAnimationEvaluator
+     */
+    public LayoutAnimationEvaluator getLayoutAnimationEvaluator() {
+        return evaluator;
     }
 
     /**
@@ -449,6 +585,10 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             performLayout(false);
         }
 
+        private double minDist = Double.MAX_VALUE;
+        private double maxDist = Double.MIN_VALUE;
+        private double avgDist = 0D;
+
         protected void performLayout(boolean animate) {
             // Make sure the layout knows about the size of the view
             JComponent vw = getView();
@@ -459,18 +599,37 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                     // some layouts dont support this
                 }
             }
+
+            minDist = Double.MAX_VALUE;
+            maxDist = Double.MIN_VALUE;
+            avgDist = 0D;
+
+            boolean animating = timer.isRunning();
+
             // Iterate the vertices and make sure the widgets locations
             // match the graph
-            for (N n : graph.getVertices()) {
-                Point2D p = layout.transform(n);
-                Point p1 = toPoint(p);
+            Collection<N> nodes = graph.getVertices();
+            for (N n : nodes) {
                 Widget widget = findWidget(n);
+                Point2D oldLocation = widget.getPreferredLocation();
+                Point2D newLocation = layout.transform(n);
+
+                if (oldLocation != null && animating) {
+                    double length = Math.abs(oldLocation.distance(newLocation));
+                    minDist = Math.min(minDist, length);
+                    maxDist = Math.max(maxDist, length);
+                    avgDist += length;
+                }
+
+                Point p1 = toPoint(newLocation);
                 if (animate) {
                     getSceneAnimator().animatePreferredLocation(widget, p1);
                 } else {
                     widget.setPreferredLocation(p1);
                 }
             }
+            // Avoid div by zero
+            avgDist /= nodes.isEmpty() ? 0D : (double) nodes.size();
             for (E e : graph.getEdges()) {
                 Widget w = (Widget) findWidget(e);
                 if (w instanceof ConnectionWidget) {
@@ -480,6 +639,9 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                 }
             }
             JungScene.this.validate();
+            if (animating && evaluator.animationIsFinished(minDist, maxDist, avgDist, layout)) {
+                timer.stop();
+            }
         }
 
         private MoveProvider delegate = ActionFactory.createDefaultMoveProvider();
@@ -606,6 +768,35 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                     throw new AssertionError(ge.getType());
             }
             validate();
+        }
+    }
+
+    private class TimerListener implements ActionListener {
+
+        public TimerListener() {
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (!animate) {
+                return;
+            }
+            if (layout instanceof IterativeContext) {
+                IterativeContext c = (IterativeContext) layout;
+                try {
+                    c.step();
+                } catch (Exception ex) {
+                    // e.g. IllegalArgumentException: Unexpected mathematical result in FRLayout:calcPositions
+                    // Some layouts are buggy.
+                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, e);
+                }
+                if (c.done()) {
+                    timer.stop();
+                }
+                getSceneLayout().invokeLayout();
+                validate();
+                repaint();
+            }
         }
     }
 }

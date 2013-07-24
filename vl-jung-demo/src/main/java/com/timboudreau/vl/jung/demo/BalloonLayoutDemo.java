@@ -25,8 +25,8 @@
  */
 package com.timboudreau.vl.jung.demo;
 
-import org.apache.commons.collections15.Factory;
 import edu.uci.ics.jung.graph.Forest;
+import org.apache.commons.collections15.Factory;
 
 /**
  * Demonstrates the visualization of a Tree using TreeLayout and BalloonLayout.
@@ -37,6 +37,8 @@ import edu.uci.ics.jung.graph.Forest;
  */
 @SuppressWarnings("serial")
 public class BalloonLayoutDemo {
+
+    // Code borrowed from JUNG's demos
 
     Factory<Integer> edgeFactory = new Factory<Integer>() {
         int i = 0;

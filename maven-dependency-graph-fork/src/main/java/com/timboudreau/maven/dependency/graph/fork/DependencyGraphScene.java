@@ -428,35 +428,6 @@ public class DependencyGraphScene extends JungScene<ArtifactGraphNode, ArtifactG
         }
     }
 
-    public void addGraphNode(ArtifactGraphNode o) {
-        graph.addVertex(o);
-    }
-
-    public void addGraphEdge(ArtifactGraphEdge edge, ArtifactGraphNode source, ArtifactGraphNode target) {
-        graph.addEdge(edge, source, target);
-    }
-
-    GraphMutator modifyGraph() {
-        return new GraphMutator();
-    }
-
-    final class GraphMutator implements AutoCloseable {
-
-        public void addGraphNode(ArtifactGraphNode node) {
-            DependencyGraphScene.this.addGraphNode(node);
-        }
-
-        public void addGraphEdge(ArtifactGraphEdge edge, ArtifactGraphNode source, ArtifactGraphNode target) {
-            DependencyGraphScene.this.addGraphEdge(edge, source, target);
-        }
-
-        @Override
-        public void close() {
-            sync();
-            performLayout(true);
-        }
-    }
-
     private class AllActionsProvider implements PopupMenuProvider,
             MoveProvider, EditProvider, SelectProvider {
 

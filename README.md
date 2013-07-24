@@ -24,6 +24,8 @@ Project Layout
 The project consists of a Maven parent project with four child projects:
 
   * _Visual Library + Jung_ &mdash; does the basic integration of JUNG with Visual Library and provides ``JungScene`` and ``JungConnectionWidget``
+    * Supports JUNG's animated layouts either using a timer or by pre-rolling
+    * Wrappers any JUNG layout in a Visual Library ``SceneLayout`` so that it can be used to lay out a scene with actual widgets
   * _Visual Library Jung Base Classes_ &mdash; adds in convenience classes such as ``BaseJungScene`` and its supporting cast
   * _Visual Library + Jung Demo_ &mdash; is a standalone (non-NetBeans) demo application
   * _Visual Library + JUNG NetBeans Module Wrapper_ &mdash; is a NetBeans [Library Wrapper Module](http://wiki.netbeans.org/DevFaqWrapperModules) which embeds JUNG and these libraries and exposes their packages as its public API (NetBeans modules use classloader partitioning to restrict package access).

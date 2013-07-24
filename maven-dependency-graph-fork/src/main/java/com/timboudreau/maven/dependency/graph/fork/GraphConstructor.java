@@ -42,7 +42,7 @@
 
 package com.timboudreau.maven.dependency.graph.fork;
 
-import com.timboudreau.maven.dependency.graph.fork.DependencyGraphScene.GraphMutator;
+import com.timboudreau.vl.jung.JungScene.GraphMutator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -123,7 +123,7 @@ class GraphConstructor implements DependencyNodeVisitor {
         path.pop();
 //        graphPath.pop();
         if (root == node) {
-            try (GraphMutator mutator = scene.modifyGraph()) {
+            try (GraphMutator<ArtifactGraphNode, ArtifactGraphEdge> mutator = scene.modifyGraph()) {
                 //add all nodes and edges now
                 ArtifactGraphNode rootNode = cache.get(node.getArtifact().getDependencyConflictId());
                 //root needs to go first..
