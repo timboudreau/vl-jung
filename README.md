@@ -5,10 +5,11 @@ This project integrates [JUNG](http://jung.sourceforge.net/) - a library for dra
 
 The result gains new features for users of either library.  Visual Library users get a collection of good, usable graph layouts backed by research in graph theory.  JUNG users get interactivity - such as animation, using real UI components to represent graph contents, and the ability to incorporate non-graph elements into a graph UI to provide a richer user experience.
 
-Watch [this video](http://PENDING) for a demo and overview of the project.
+Watch [this video](http://timboudreau.com/blog/NetBeans_Visual_Library_Meets_JUNG/read) for a demo and overview of the project.
 
 Visual Library is a standalone library which is part of NetBeans but can be used in standalone Java applications.  You don't have to be writing a NetBeans plugin to use this library!
 
+Builds and a Maven repository containing the JARs can be found [on timboudreau.com](http://timboudreau.com/builds/job/vl-jung).  [Read the Javadoc]([Javadoc here](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung/target/site/apidocs/index.html) and also [here](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung-extensions/target/site/apidocs/index.html) (there are two libraries).
 
 Features
 --------
@@ -44,4 +45,12 @@ License
 
 BSD 2-clause license for compatibility with JUNG (and most anything else).
 
+
+More Info
+------------
+  * [NetBeans' Visual Library](http://graph.netbeans.org) 
+  * [JUNG - Java Universal Graph framework](http://jung.sourceforge.net)
+  * [Demo video on YouTube](http://www.youtube.com/watch?v=pdkxnDZRJLM)
+  * [Builds + Maven repo](http://timboudreau.com/builds/job/vl-jung)
+  * [Javadoc](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung/target/site/apidocs/index.html) and [here](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung-extensions/target/site/apidocs/index.html)
 
