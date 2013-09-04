@@ -95,10 +95,10 @@ import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.algorithms.layout.SpringLayout;
 import edu.uci.ics.jung.algorithms.layout.SpringLayout2;
 import edu.uci.ics.jung.algorithms.layout.TreeLayout;
-import edu.uci.ics.jung.algorithms.shortestpath.Distance;
 import edu.uci.ics.jung.graph.DelegateForest;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import java.awt.Component;
+import java.util.Iterator;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
@@ -706,9 +706,10 @@ public class DependencyGraphScene extends JungScene<ArtifactGraphNode, ArtifactG
                     eTarget.getGroupId(), eTarget.getArtifactId(), null);
             if (dep == null) {
                 // now check the active profiles for the dependency..
-                List<String> profileNames = new ArrayList<String>();
+                List<String> profileNames = new ArrayList<>();
                 NbMavenProject nbMavproject = nbProject.getLookup().lookup(NbMavenProject.class);
-                for (org.apache.maven.model.Profile prof : nbMavproject.getMavenProject().getActiveProfiles()) {
+                for (Iterator<Object> it = nbMavproject.getMavenProject().getActiveProfiles().iterator(); it.hasNext();) {
+                    org.apache.maven.model.Profile prof = (org.apache.maven.model.Profile) it.next();
                     profileNames.add(prof.getId());
                 }
                 for (String profileId : profileNames) {

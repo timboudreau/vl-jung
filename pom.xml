@@ -17,7 +17,7 @@
         <module>vl-jung-extensions</module>
         <module>vl-jung-demo</module>
         <module>vl-jung-nbm</module>
-        <module>maven-dependency-graph-fork</module>
+<!--        <module>maven-dependency-graph-fork</module> -->
     </modules>
     <repositories>
         <repository>
