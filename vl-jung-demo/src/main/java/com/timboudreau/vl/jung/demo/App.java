@@ -169,6 +169,7 @@ public class App {
             public void actionPerformed(ActionEvent ae) {
                 Transformer<Context<Graph<String, Number>, Number>, Shape> xform = (Transformer<Context<Graph<String, Number>, Number>, Shape>) shapesBox.getSelectedItem();
                 scene.setConnectionEdgeShape(xform);
+                scene.relayout(true);
             }
         });
         shapesBox.setRenderer(new DefaultListCellRenderer() {
