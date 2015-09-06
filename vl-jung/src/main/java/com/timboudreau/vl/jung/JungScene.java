@@ -130,6 +130,66 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }, ObjectSceneEventType.OBJECT_SELECTION_CHANGED);
     }
 
+    public Widget findNodeWidget(N node) {
+        return findWidget(node);
+    }
+
+    public Widget findEdgeWidget(E edge) {
+        return findWidget(edge);
+    }
+
+    public N nodeForWidget(Widget w, Class<N> type) {
+        return objFor(w, type);
+    }
+
+    public E edgeForWidget(Widget w, Class<E> type) {
+        return objFor(w, type);
+    }
+
+    private <T> T objFor(Widget w, Class<T> type) {
+        Object result = findObject(w);
+        return type.isInstance(result) ? type.cast(result) : null;
+    }
+
+    private MultiMoveAction.RelatedWidgetProvider relatedProvider;
+
+    public MultiMoveAction.RelatedWidgetProvider relatedProvider() {
+        if (relatedProvider == null) {
+            relatedProvider = new RelatedProvider();
+        }
+        return relatedProvider;
+    }
+
+    private class RelatedProvider implements MultiMoveAction.RelatedWidgetProvider {
+
+        @Override
+        public void findWidgets(Widget relatedTo, Collection<? super Widget> addTo, int depth) {
+            N model = (N) findObject(relatedTo);
+            Set<N> all = new HashSet<>();
+            findEdges(model, all, depth);
+            for (N mdl : all) {
+                Widget w = findNodeWidget(mdl);
+                if (w != null) {
+                    addTo.add(w);
+                }
+            }
+        }
+
+        private void findEdges(N model, Set<N> related, int depth) {
+            Collection<E> edges = findNodeEdges(model, true, false);
+            Set<N> found = new HashSet<>();
+            for (E n : edges) {
+                found.add(graph.getDest(n));
+            }
+            if (depth > 0) {
+                for (N f : found) {
+                    findEdges(f, related, depth - 1);
+                }
+            }
+            related.addAll(found);
+        }
+    };
+
     /**
      * The lookup contains the currently selected nodes, and you can listen for
      * changes on it to get the current set of selected nodes
@@ -354,10 +414,9 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     /**
      * Add a node to this graph. Use this method in place of
      * <code>addNode()</code>. If the graph passed to this scene's constructor
-     * does not implement
-     * <code>ObservableGraph</code>, you will need to manually call
-     * <code>sync()</code> to update the scene from the graph (or use
-     * <code>GraphMutator</code> in a try-with-resources loop).
+     * does not implement <code>ObservableGraph</code>, you will need to
+     * manually call <code>sync()</code> to update the scene from the graph (or
+     * use <code>GraphMutator</code> in a try-with-resources loop).
      *
      * @param node A node
      */
@@ -391,10 +450,10 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         /**
          * Add a node to this graph. Use this method in place of
          * <code>addNode()</code>. If the graph passed to this scene's
-         * constructor does not implement
-         * <code>ObservableGraph</code>, you will need to manually call
-         * <code>sync()</code> to update the scene from the graph (or use
-         * <code>GraphMutator</code> in a try-with-resources loop).
+         * constructor does not implement <code>ObservableGraph</code>, you will
+         * need to manually call <code>sync()</code> to update the scene from
+         * the graph (or use <code>GraphMutator</code> in a try-with-resources
+         * loop).
          *
          * @param node A node
          */
@@ -418,8 +477,8 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }
 
         /**
-         * Synchronizes the scene's graph's contents with the nodes the
-         * scene knows about.
+         * Synchronizes the scene's graph's contents with the nodes the scene
+         * knows about.
          */
         @Override
         public void close() {
@@ -484,6 +543,10 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     public final WidgetAction createNodeMoveAction() {
         return ActionFactory.createMoveAction(ActionFactory.createFreeMoveStrategy(),
                 sceneLayout);
+    }
+
+    protected MoveProvider moveProvider() {
+        return sceneLayout;
     }
 
     /**
@@ -773,8 +836,6 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
 
     private class TimerListener implements ActionListener {
 
-        public TimerListener() {
-        }
 
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -788,7 +849,9 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                 } catch (Exception ex) {
                     // e.g. IllegalArgumentException: Unexpected mathematical result in FRLayout:calcPositions
                     // Some layouts are buggy.
-                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, e);
+//                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, ex);
+                    ex.printStackTrace();
+//                    timer.stop();
                 }
                 if (c.done()) {
                     timer.stop();

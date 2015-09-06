@@ -25,7 +25,6 @@
  */
 package com.timboudreau.vl.jung.demo;
 
-import com.timboudreau.vl.jung.demo.layout.XLayout;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
 import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
 import edu.uci.ics.jung.algorithms.layout.CircleLayout;
@@ -39,11 +38,11 @@ import edu.uci.ics.jung.algorithms.layout.RadialTreeLayout;
 import edu.uci.ics.jung.algorithms.layout.SpringLayout;
 import edu.uci.ics.jung.algorithms.layout.SpringLayout2;
 import edu.uci.ics.jung.algorithms.layout.TreeLayout;
-import edu.uci.ics.jung.algorithms.util.IterativeContext;
 import edu.uci.ics.jung.graph.DelegateForest;
 import edu.uci.ics.jung.graph.Forest;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
+import edu.uci.ics.jung.graph.UndirectedOrderedSparseMultigraph;
 import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.visualization.decorators.EdgeShape;
 import java.awt.BorderLayout;
@@ -58,15 +57,22 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import javax.swing.AbstractAction;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -76,6 +82,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
@@ -88,6 +95,20 @@ import org.openide.util.LookupListener;
 
 public class App {
 
+    private static final Pattern QUOTES = Pattern.compile("\"(.*?)\"\\s+\"(.*?)\"\\s+");
+    private static final Pattern NO_QUOTES = Pattern.compile("(.*?)\\s+(.*)");
+
+    private static class GraphAndForest {
+
+        private final ObservableGraph<String, String> graph;
+        private final Forest<String, String> forest;
+
+        public GraphAndForest(ObservableGraph<String, String> graph, Forest<String, String> forest) {
+            this.graph = graph;
+            this.forest = forest;
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         try {
             UIManager.setLookAndFeel(new NimbusLookAndFeel());
@@ -97,13 +118,15 @@ public class App {
 
         final JFrame jf = new JFrame("Visual Library + JUNG Demo");
         jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-//        ObservableGraph g = new ObservableGraph(getDemoGraph());
-//        ObservableGraph g = new ObservableGraph(createDirectedAcyclicGraph(2, 9, 0.75D));
-        Forest<String, Integer> forest = new DelegateForest<>();
-        ObservableGraph g = new ObservableGraph(new BalloonLayoutDemo().createTree(forest));
+        GraphAndForest gf = loadGraph(args);
 
-        Layout layout = new TreeLayout(forest, 70, 70);
-        final BaseJungScene scene = new SceneImpl(g, layout);
+        Layout layout;
+        try {
+            layout = gf.forest == null ? new KKLayout(gf.graph) : new TreeLayout(gf.forest, 70, 70);
+        } catch (IllegalArgumentException ex) {
+            layout = new KKLayout(gf.graph);
+        }
+        final BaseJungScene scene = new SceneImpl(gf.graph, layout);
         jf.setLayout(new BorderLayout());
         jf.add(new JScrollPane(scene.createView()), BorderLayout.CENTER);
 
@@ -111,23 +134,25 @@ public class App {
         bar.setMargin(new Insets(5, 5, 5, 5));
         bar.setLayout(new FlowLayout(5));
         DefaultComboBoxModel<Layout> mdl = new DefaultComboBoxModel<>();
-        mdl.addElement(new KKLayout(g));
+        mdl.addElement(new KKLayout(gf.graph));
         mdl.addElement(layout);
-        mdl.addElement(new BalloonLayout(forest));
-        mdl.addElement(new RadialTreeLayout(forest));
-        mdl.addElement(new CircleLayout(g));
-        mdl.addElement(new FRLayout(g));
-        mdl.addElement(new FRLayout2(g));
-        mdl.addElement(new ISOMLayout(g));
-        mdl.addElement(new SpringLayout(g));
-        mdl.addElement(new SpringLayout2(g));
-        mdl.addElement(new DAGLayout(g));
-        mdl.addElement(new XLayout(g));
+        if (gf.forest != null) {
+            mdl.addElement(new BalloonLayout(gf.forest));
+            mdl.addElement(new RadialTreeLayout(gf.forest));
+        }
+        mdl.addElement(new CircleLayout(gf.graph));
+        mdl.addElement(new FRLayout(gf.graph));
+        mdl.addElement(new FRLayout2(gf.graph));
+        mdl.addElement(new ISOMLayout(gf.graph));
+        mdl.addElement(new SpringLayout(gf.graph));
+        mdl.addElement(new SpringLayout2(gf.graph));
+        mdl.addElement(new DAGLayout(gf.graph));
+//        mdl.addElement(new XLayout(g));
         mdl.setSelectedItem(layout);
         final JCheckBox checkbox = new JCheckBox("Animate iterative layouts");
-        
+
         scene.setLayoutAnimationFramesPerSecond(48);
-        
+
         final JComboBox<Layout> layouts = new JComboBox(mdl);
         layouts.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -153,21 +178,21 @@ public class App {
         });
 
         bar.add(new JLabel(" Connection Shape"));
-        DefaultComboBoxModel<Transformer<Context<Graph<String, Number>, Number>, Shape>> shapes = new DefaultComboBoxModel<>();
-        shapes.addElement(new EdgeShape.QuadCurve<String, Number>());
-        shapes.addElement(new EdgeShape.BentLine<String, Number>());
-        shapes.addElement(new EdgeShape.CubicCurve<String, Number>());
-        shapes.addElement(new EdgeShape.Line<String, Number>());
-        shapes.addElement(new EdgeShape.Box<String, Number>());
-        shapes.addElement(new EdgeShape.Orthogonal<String, Number>());
-        shapes.addElement(new EdgeShape.Wedge<String, Number>(10));
+        DefaultComboBoxModel<Transformer<Context<Graph<String, String>, String>, Shape>> shapes = new DefaultComboBoxModel<>();
+        shapes.addElement(new EdgeShape.QuadCurve<String, String>());
+        shapes.addElement(new EdgeShape.BentLine<String, String>());
+        shapes.addElement(new EdgeShape.CubicCurve<String, String>());
+        shapes.addElement(new EdgeShape.Line<String, String>());
+        shapes.addElement(new EdgeShape.Box<String, String>());
+        shapes.addElement(new EdgeShape.Orthogonal<String, String>());
+        shapes.addElement(new EdgeShape.Wedge<String, String>(10));
 
-        final JComboBox<Transformer<Context<Graph<String, Number>, Number>, Shape>> shapesBox = new JComboBox<>(shapes);
+        final JComboBox<Transformer<Context<Graph<String, String>, String>, Shape>> shapesBox = new JComboBox<>(shapes);
         shapesBox.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent ae) {
-                Transformer<Context<Graph<String, Number>, Number>, Shape> xform = (Transformer<Context<Graph<String, Number>, Number>, Shape>) shapesBox.getSelectedItem();
+                Transformer<Context<Graph<String, String>, String>, Shape> xform = (Transformer<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
                 scene.setConnectionEdgeShape(xform);
             }
         });
@@ -184,34 +209,33 @@ public class App {
         bar.add(new MinSizePanel(scene.createSatelliteView()));
         bar.setFloatable(false);
         bar.setRollover(true);
-        
+
         final JLabel selectionLabel = new JLabel("<html>&nbsp;</html>");
-        System.out.println("LOOKUP IS " + scene.getLookup());
         Lookup.Result<String> selectedNodes = scene.getLookup().lookupResult(String.class);
+        selectedNodes.allInstances();
         LookupListener listener = new LookupListener() {
             @Override
             public void resultChanged(LookupEvent le) {
-                System.out.println("RES CHANGED");
                 Lookup.Result<String> res = (Lookup.Result<String>) le.getSource();
                 StringBuilder sb = new StringBuilder("<html>");
                 List<String> l = new ArrayList<>(res.allInstances());
                 Collections.sort(l);
                 for (String s : l) {
-                    if (sb.length() != 0) {
+                    if (sb.length() != 6) {
                         sb.append(", ");
                     }
                     sb.append(s);
                 }
                 sb.append("</html>");
                 selectionLabel.setText(sb.toString());
-                System.out.println("LOOKUP EVENT " + sb);
             }
         };
+        selectionLabel.putClientProperty("ll", listener); // ensure it's not garbage collected
+        selectionLabel.putClientProperty("lr", selectedNodes); // ensure it's not garbage collected
         selectedNodes.addLookupListener(listener);
         selectedNodes.allInstances();
-        
-        bar.add(selectionLabel);
-        
+
+
         checkbox.setSelected(true);
         checkbox.addItemListener(new ItemListener() {
             @Override
@@ -220,6 +244,8 @@ public class App {
             }
         });
         bar.add(checkbox);
+        bar.add(selectionLabel);
+        selectionLabel.setHorizontalAlignment(SwingConstants.TRAILING);
 
 //        jf.setSize(jf.getGraphicsConfiguration().getBounds().width - 120, 700);
         jf.setSize(new Dimension(1280, 720));
@@ -249,73 +275,102 @@ public class App {
         }
     }
 
-    /*
-     public static Graph<String, Number> createDirectedAcyclicGraph(int layers,
-     int maxNodesPerLayer,
-     double linkprob) {
+    private static String[] elements(String line, String[] into) {
+        if (line.startsWith("#")) {
+            return null;
+        }
+        Matcher m = QUOTES.matcher(line);
+        if (m.find()) {
+            into[0] = m.group(1);
+            into[1] = m.group(2);
+            return into;
+        } else {
+            m = NO_QUOTES.matcher(line);
+            if (m.find()) {
+                into[0] = m.group(1);
+                into[1] = m.group(2);
+                return into;
+            }
+        }
+        return null;
+    }
 
-     DirectedGraph<String, Number> dag = new DirectedSparseMultigraph<String, Number>();
-     Set<String> previousLayers = new HashSet<String>();
-     Set<String> inThisLayer = new HashSet<String>();
-     for (int i = 0; i < layers; i++) {
-
-     int nodesThisLayer = (int) (Math.random() * maxNodesPerLayer) + 1;
-     for (int j = 0; j < nodesThisLayer; j++) {
-     String v = i + ":" + j;
-     dag.addVertex(v);
-     inThisLayer.add(v);
-     // for each previous node...
-     for (String v2 : previousLayers) {
-     if (Math.random() < linkprob) {
-     Double de = new Double(Math.random());
-     dag.addEdge(de, v, v2);
-     }
-     }
-     }
-
-     previousLayers.addAll(inThisLayer);
-     inThisLayer.clear();
-     }
-     return dag;
-     }
-
-     public static Graph<String, Number> getDemoGraph() {
-     UndirectedGraph<String, Number> g
-     = new UndirectedSparseMultigraph<>();
-
-     for (int i = 0; i < pairs.length; i++) {
-     String[] pair = pairs[i];
-     createEdge(g, pair[0], pair[1], Integer.parseInt(pair[2]));
-     }
-
-     // let's throw in a clique, too
-     for (int i = 1; i <= 10; i++) {
-     for (int j = i + 1; j <= 10; j++) {
-     String i1 = "c" + i;
-     String i2 = "c" + j;
-     g.addEdge(Math.pow(i + 2, j), i1, i2);
-     }
-     }
-
-     // and, last, a partial clique
-     for (int i = 11; i <= 20; i++) {
-     for (int j = i + 1; j <= 20; j++) {
-     if (Math.random() > 0.6) {
-     continue;
-     }
-     String i1 = "p" + i;
-     String i2 = "p" + j;
-     g.addEdge(Math.pow(i + 2, j), i1, i2);
-     }
-     }
-     return g;
-     }
-
-     private static void createEdge(Graph<String, Number> g,
-     String v1Label,
-     String v2Label,
-     int weight) {
-     g.addEdge(new Double(Math.random()), v1Label, v2Label);
-     }
-     */
+    private static GraphAndForest loadGraph(String[] args) throws FileNotFoundException, IOException {
+        if (args.length > 0) {
+            File f = new File(args[0]);
+            if (!f.exists() || !f.isFile() || !f.canRead()) {
+                System.err.println("File does not exist, is not readable, or is not a file: " + f);
+                System.exit(1);
+            }
+            try {
+                Forest<String, String> forest = new DelegateForest<>();
+                String[] arr = new String[2];
+                Set<String> pairs = new HashSet<>();
+                try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+                    int ix = 0;
+                    for (String line; (line = br.readLine()) != null;) {
+                        line = line.trim();
+                        String[] items = elements(line, arr);
+                        if (items != null) {
+                            if (items[0].equals(items[1])) {
+                                continue;
+                            }
+                            String[] x = new String[]{items[0], items[1]};
+                            Arrays.sort(x);
+                            String key = x[0] + "::" + x[1];
+                            if (!pairs.contains(key)) {
+                                String edge = Integer.toString(ix);
+                                forest.addEdge(edge, items[0], items[1]);
+                                pairs.add(key);
+                            } else {
+                                System.out.println("DUP: " + key);
+                            }
+                        }
+                        ix++;
+                    }
+                }
+                ObservableGraph<String, String> g = new ObservableGraph<>(forest);
+                return new GraphAndForest(g, forest);
+            } catch (Exception e) {
+                // Graph has cycles - try undirected
+                e.printStackTrace();
+                UndirectedOrderedSparseMultigraph<String, String> graph = new UndirectedOrderedSparseMultigraph<String, String>();
+                String[] arr = new String[2];
+                Set<String> pairs = new HashSet<>();
+                try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+                    int ix = 0;
+                    for (String line; (line = br.readLine()) != null;) {
+                        line = line.trim();
+                        String[] items = elements(line, arr);
+                        if (items != null) {
+                            if (items[0].equals(items[1])) {
+                                continue;
+                            }
+                            String edge = Integer.toString(ix);
+                            try {
+                                String[] x = new String[]{items[0], items[1]};
+                                Arrays.sort(x);
+                                String key = x[0] + "::" + x[1];
+                                if (!pairs.contains(key)) {
+                                    graph.addEdge(edge, items[0], items[1]);
+                                    pairs.add(key);
+                                } else {
+                                    System.out.println("DUP: " + key);
+                                }
+                            } catch (IllegalArgumentException ex) {
+                                System.err.println(ex.getMessage());
+                            }
+                        }
+                        ix++;
+                    }
+                }
+                ObservableGraph<String, String> g = new ObservableGraph<>(graph);
+                return new GraphAndForest(g, null);
+            }
+        } else {
+            Forest<String, String> forest = new DelegateForest<>();
+            ObservableGraph<String, String> g = new ObservableGraph(new BalloonLayoutDemo().createTree(forest));
+            return new GraphAndForest(g, forest);
+        }
+    }
 }

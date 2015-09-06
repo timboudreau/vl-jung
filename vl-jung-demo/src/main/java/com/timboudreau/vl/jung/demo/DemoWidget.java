@@ -42,6 +42,8 @@ import java.util.Map;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.TextFieldInplaceEditor;
 import org.netbeans.api.visual.widget.Widget;
+import org.openide.util.Lookup;
+import org.openide.util.lookup.Lookups;
 
 /**
  *
@@ -51,9 +53,13 @@ public class DemoWidget<N, E> extends Widget {
 
     private Stroke stroke = new BasicStroke(2);
     private String label = "";
+    final String node;
+    private final Lookup lkp;
 
-    public DemoWidget(JungScene<N, E> scene) {
+    public DemoWidget(JungScene<N, E> scene, String node) {
         super(scene);
+        lkp = Lookups.fixed(node);
+        this.node = node;
         setBackground(new Color(240, 240, 255));
         setForeground(Color.gray);
         getActions().addAction(ActionFactory.createInplaceEditorAction(new TextFieldInplaceEditor() {
@@ -76,6 +82,11 @@ public class DemoWidget<N, E> extends Widget {
         }));
     }
 
+    @Override
+    public Lookup getLookup() {
+        return lkp;
+    }
+
     public void setLabel(String label) {
         this.label = label;
     }
@@ -96,6 +107,10 @@ public class DemoWidget<N, E> extends Widget {
         // Minimum size 18 pixels, grow by 3 for each connection
         double w, h;
         w = h = 18 + (ix * 3);
+        
+        double labelWidth = getGraphics().getFontMetrics().stringWidth(label);
+        w = Math.max(w, labelWidth + 18);
+        
 //        Ellipse2D.Double e = new Ellipse2D.Double(0, 0, w, h);
         RoundRectangle2D.Double e = new RoundRectangle2D.Double(-w / 2D, -h / 2D, w, h, 8, 8);
         return e;

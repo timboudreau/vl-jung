@@ -40,19 +40,18 @@ public class BalloonLayoutDemo {
 
     // Code borrowed from JUNG's demos
 
-    Factory<Integer> edgeFactory = new Factory<Integer>() {
+    Factory<String> edgeFactory = new Factory<String>() {
         int i = 0;
-        public Integer create() {
-            return i++;
+        public String create() {
+            return Integer.toString(i++);
         }
     };
 
-    Forest<String, Integer> createTree(Forest<String, Integer> graph) {
-
-        graph.addVertex("A0");
-        graph.addEdge(edgeFactory.create(), "A0", "B0");
-        graph.addEdge(edgeFactory.create(), "A0", "B1");
-        graph.addEdge(edgeFactory.create(), "A0", "B2");
+    Forest<String, String> createTree(Forest<String, String> graph) {
+        String base = "Base Node";
+        graph.addEdge(edgeFactory.create(), base, "B0");
+        graph.addEdge(edgeFactory.create(), base, "B1");
+        graph.addEdge(edgeFactory.create(), base, "B2");
 
         graph.addEdge(edgeFactory.create(), "B0", "C0");
         graph.addEdge(edgeFactory.create(), "B0", "C1");
@@ -83,19 +82,17 @@ public class BalloonLayoutDemo {
         graph.addEdge(edgeFactory.create(), "D1", "G6");
         graph.addEdge(edgeFactory.create(), "D1", "G7");
 
-        graph.addEdge(edgeFactory.create(), "A0", "HA1");
-        graph.addEdge(edgeFactory.create(), "A0", "HA2");
-        graph.addEdge(edgeFactory.create(), "A0", "HA3");
+        graph.addEdge(edgeFactory.create(), base, "HA1");
+        graph.addEdge(edgeFactory.create(), base, "HA2");
+        graph.addEdge(edgeFactory.create(), base, "HA3");
        	graph.addEdge(edgeFactory.create(), "HA3", "I1");
        	graph.addEdge(edgeFactory.create(), "HA3", "I2");
         
        	graph.addEdge(edgeFactory.create(), "I2", "J1");
-       	graph.addVertex("K0");
        	graph.addEdge(edgeFactory.create(), "K0", "K1");
        	graph.addEdge(edgeFactory.create(), "K0", "K2");
        	graph.addEdge(edgeFactory.create(), "K0", "K3");
        	
-       	graph.addVertex("J0");
     	graph.addEdge(edgeFactory.create(), "J0", "J1");
     	graph.addEdge(edgeFactory.create(), "J0", "J2");
     	graph.addEdge(edgeFactory.create(), "J1", "J4");
