@@ -4,7 +4,7 @@
     <parent>
         <artifactId>visual-library-jung</artifactId>
         <groupId>com.timboudreau</groupId>
-        <version>1.0</version>
+        <version>1.1</version>
     </parent>
 
     <artifactId>vl-jung-nbm</artifactId>

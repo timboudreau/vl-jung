@@ -119,6 +119,9 @@ public final class MultiMoveAction extends WidgetAction.LockedAdapter {
 
     public WidgetAction.State mouseReleased(Widget widget, WidgetAction.WidgetMouseEvent event) {
         boolean state;
+        if (moveData == null) {
+            return WidgetAction.State.REJECTED;
+        }
         if (moveData.initialMouseLocation != null && moveData.initialMouseLocation.equals(event.getPoint())) {
             state = true;
         } else {

@@ -13,3 +13,4 @@ target/*
 /vl-jung-demo/target/
 /vl-jung-nbm/target/
 /maven-dependency-graph-fork/target/
+/vl-jung-demo/nbproject/

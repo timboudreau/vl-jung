@@ -25,6 +25,7 @@
  */
 package com.timboudreau.vl.jung.demo;
 
+import com.timboudreau.vl.jung.demo.layout.Arrangers;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
 import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
 import edu.uci.ics.jung.algorithms.layout.CircleLayout;
@@ -44,6 +45,7 @@ import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.UndirectedOrderedSparseMultigraph;
 import edu.uci.ics.jung.graph.util.Context;
+import edu.uci.ics.jung.graph.util.Pair;
 import edu.uci.ics.jung.visualization.decorators.EdgeShape;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -66,6 +68,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -95,7 +98,7 @@ import org.openide.util.LookupListener;
 
 public class App {
 
-    private static final Pattern QUOTES = Pattern.compile("\"(.*?)\"\\s+\"(.*?)\"\\s+");
+    private static final Pattern QUOTES = Pattern.compile("\"(.*?)\"\\s+\"(.*)\"$");
     private static final Pattern NO_QUOTES = Pattern.compile("(.*?)\\s+(.*)");
 
     private static class GraphAndForest {
@@ -136,6 +139,7 @@ public class App {
         DefaultComboBoxModel<Layout> mdl = new DefaultComboBoxModel<>();
         mdl.addElement(new KKLayout(gf.graph));
         mdl.addElement(layout);
+        mdl.addElement(Arrangers.newLayout(gf.graph));
         if (gf.forest != null) {
             mdl.addElement(new BalloonLayout(gf.forest));
             mdl.addElement(new RadialTreeLayout(gf.forest));
@@ -235,7 +239,6 @@ public class App {
         selectedNodes.addLookupListener(listener);
         selectedNodes.allInstances();
 
-
         checkbox.setSelected(true);
         checkbox.addItemListener(new ItemListener() {
             @Override
@@ -319,8 +322,8 @@ public class App {
                             Arrays.sort(x);
                             String key = x[0] + "::" + x[1];
                             if (!pairs.contains(key)) {
-                                String edge = Integer.toString(ix);
-                                forest.addEdge(edge, items[0], items[1]);
+                                String edge = Integer.toString(ix).intern();
+                                forest.addEdge(edge, items[0].intern(), items[1].intern());
                                 pairs.add(key);
                             } else {
                                 System.out.println("DUP: " + key);
@@ -329,6 +332,28 @@ public class App {
                         ix++;
                     }
                 }
+                if (true) {
+                    List<String> verts = new LinkedList<>(forest.getVertices());
+                    Forest<String, String> nue = new DelegateForest<String, String>();
+                    int ix = 0;
+                    for (String v : verts) {
+                        if ("No Acquirer".equals(v)) {
+                            continue;
+                        }
+                        int incidentCount = forest.getIncidentCount(v);
+                        int successors = forest.getSuccessorCount(v);
+                        int predecessors = forest.getPredecessorCount(v);
+                        int agg = aggregateSuccessors(forest, v);
+                        if (agg > 3 || predecessors > 1) {
+                            for (String e : forest.getChildEdges(v)) {
+                                Pair<String> p = forest.getEndpoints(e);
+                                nue.addEdge(ix++ + "", p.getFirst(), p.getSecond());
+                            }
+                        }
+                    }
+                    forest = nue;
+                }
+
                 ObservableGraph<String, String> g = new ObservableGraph<>(forest);
                 return new GraphAndForest(g, forest);
             } catch (Exception e) {
@@ -364,6 +389,7 @@ public class App {
                         ix++;
                     }
                 }
+
                 ObservableGraph<String, String> g = new ObservableGraph<>(graph);
                 return new GraphAndForest(g, null);
             }
@@ -372,5 +398,23 @@ public class App {
             ObservableGraph<String, String> g = new ObservableGraph(new BalloonLayoutDemo().createTree(forest));
             return new GraphAndForest(g, forest);
         }
+    }
+
+    private static int aggregateSuccessors(Graph<String, String> graph, String vertex) {
+        return aggregateSuccessors(graph, vertex, new HashSet<String>());
+    }
+
+    private static int aggregateSuccessors(Graph<String, String> graph, String vertex, Set<String> seen) {
+        seen.add(vertex);
+        int result = 0;
+        for (String v : graph.getSuccessors(vertex)) {
+            result++;
+            if (seen.contains(v)) {
+                continue;
+            }
+            seen.add(v);
+            result += aggregateSuccessors(graph, v, seen);
+        }
+        return result;
     }
 }
