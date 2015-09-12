@@ -43,26 +43,67 @@ public class Force {
         this.strength = strength;
     }
 
-    public void apply(double[] into) {
+    public double[] apply(double[] into) {
+        if (into == null) {
+            into = new double[2];
+        }
         double angle = circle.angleOf(into[0], into[1]);
         double distance = circle.distanceToCenter(into[0], into[1]);
         double str = strength.computeStrength(circle.centerX, circle.centerY, into[0], into[1], distance);
         if (str == 0D) {
-            return;
+            return into;
         }
+        str *= 6;
+//        str = 1D / str;
+        double newRad;
         double rad;
         if (str < 0D) {
-            rad = distance + (distance * -str);
+//            rad = distance + (distance * (1D / -str));
+            newRad = distance + -str;
         } else {
-            rad = distance * str;
+            newRad = distance - str;
+//            rad = distance * str;
         }
-        circle.radius = rad;
-        circle.positionOf(angle, distance * str, into);
+//        System.out.println("STRENGTH: " + str + " dist " + distance + " radius: " + rad);
+        
+//        circle.radius = rad;
+        circle.positionOf(angle, newRad, into);
+        circle.centerX = into[0];
+        circle.centerY = into[1];
+        return into;
+    }
+    
+    private static class Multiplier implements Strength {
+        private final Strength orig;
+        private final double multiplyBy;
+
+        public Multiplier(Strength orig, double multiplyBy) {
+            this.orig = orig;
+            this.multiplyBy = multiplyBy;
+        }
+
+        @Override
+        public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
+            return multiplyBy * orig.computeStrength(centerX, centerY, x, y, distance);
+        }
+        
     }
 
     public interface Strength {
 
         public double computeStrength(double centerX, double centerY, double x, double y, double distance);
+        
+        default Strength multiply(double val) {
+            return new Multiplier(this, val);
+        }
+        
+        default Strength bound(double maxDistance) {
+            return bounded(this, maxDistance);
+        }
+        
+        default Strength negate() {
+            return Force.negate(this);
+        }
     }
 
     public static final Strength NO_DROPOFF = new Strength() {
@@ -94,7 +135,7 @@ public class Force {
 
         @Override
         public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
-            return 1D / distance;
+            return 1D / Math.max(distance, 1);
         }
     }
 
@@ -112,8 +153,10 @@ public class Force {
 
         @Override
         public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
+            distance = Math.max(distance, 1);
             distance *= multiplier;
-            return 1D / (distance * distance);
+            System.out.println("DIST " + distance + " result " + (1D / (distance * distance)) );
+            return (1D / (distance * distance));
         }
     }
 
@@ -130,5 +173,4 @@ public class Force {
 
         };
     }
-
 }

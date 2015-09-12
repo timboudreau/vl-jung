@@ -37,12 +37,6 @@ import java.awt.EventQueue;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import org.netbeans.api.visual.model.ObjectSceneEvent;
 import org.netbeans.api.visual.model.ObjectSceneEventType;
 import org.netbeans.api.visual.widget.LabelWidget;
@@ -74,7 +68,7 @@ class SceneImpl extends BaseJungScene<String, String> {
         w.getActions().addAction(new MultiMoveAction(relatedProvider(), moveProvider()));
         return w;
     }
-
+    
     private class HoverListener extends ObjectSceneAdapter implements Runnable {
 
         private final RequestProcessor.Task task = RequestProcessor.getDefault().create(this);

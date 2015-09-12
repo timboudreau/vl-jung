@@ -30,6 +30,7 @@ import edu.uci.ics.jung.algorithms.layout.AbstractLayout;
 import edu.uci.ics.jung.graph.Graph;
 import java.awt.Dimension;
 import java.awt.geom.Point2D;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -71,12 +72,12 @@ public class Tensors {
                     }
                 }
             }
-            Set<N> pused = new HashSet<>();
+            Set<N> pushed = new HashSet<>();
             for (Overlap<N> o : ol) {
-                if (pused.contains(o.b)) {
+                if (pushed.contains(o.b)) {
                     continue;
                 }
-                pused.add(o.b);
+                pushed.add(o.b);
                 double myX = layout.getX(o.a);
                 double myY = layout.getY(o.a);
                 double oX = layout.getX(o.b);
@@ -150,124 +151,51 @@ public class Tensors {
                 onStart(graph, layout.getSize());
             }
 //            Set<PR> pushed = new HashSet<>();
+            double[] tmp = new double[2];
+            Set<N> used = new HashSet<>();
+            Collection<N> verts = graph.getVertices();
             for (Influences influence : influences) {
-//                Set<N> unused = new HashSet<>(graph.getVertices());
+                Set<N> unused = new HashSet<>(verts);
                 N n = (N) influence.node;
-                double myX = layout.getX(n);
-                double myY = layout.getY(n);
+                unused.remove(n);
+                used.add(n);
+                tmp[0] = layout.getX(n);
+                tmp[1] = layout.getY(n);
+
                 for (Object key : influence.influencers.keySet()) {
+                    if (key == n) {
+                        continue;
+                    }
+                    unused.remove(key);
+                    used.add((N) key);
                     double pushAmount = 0.985 * ((Double) influence.influencers.get(key));
-                    double[] pos = push(layout, n, key, pushAmount, myX, myY, null); // unused);
-                    myX = pos[0];
-                    myY = pos[1];
-//                    for (N vert : graph.getVertices()) {
-//                        if (vert == n || vert == key) {
-//                            continue;
-//                        }
-//                        double vx = layout.getX(vert);
-//                        double vy = layout.getY(vert);
-//                        Circle c = new Circle(new Point2D.Double(myX, myY));
-//                        double dist = c.distanceToCenter(vx, vy);
-//                        c.radius = dist;
-//                        PR pr = new PR(n, vert);
-//                        if (dist < 100 && !pushed.contains(pr)) {
-//                            pushed.add(pr);
-//                            c.radius *= 1.001;
-//                            double angle = c.angleOf(vx, vy);
-//                            pos = c.positionOf(angle);
-//                            layout.setLocation(vert, pos[0] - 1, pos[1] + 1);
-//                        }
-//                    }
+                    double oX = layout.getX(key);
+                    double oY = layout.getY(key);
+                    Force force = new Force(oX, oY, Force.NO_DROPOFF.multiply(pushAmount));
+                    force.apply(tmp);
                 }
-
-//                Set<N> junk = new HashSet<>(unused);
-//                for (Object key : unused) {
-//                    double[] pos = push(layout, n, key, 1.000005, myX, myY, junk);
-//                    myX = pos[0];
-//                    myY = pos[1];
-//                }
-//                for (Object key : influence.neighbors.keySet()) {
-//                    double pushAmount = 1.000001 * ((Double) influence.neighbors.get(key));
-//                    double[] pos = push(layout, n, key, pushAmount, myX, myY, junk, 100D);
-//                    myX = pos[0];
-//                    myY = pos[1];
-//                }
+                for (Object key : influence.neighbors.keySet()) {
+                    if (key == n) {
+                        continue;
+                    }
+                    used.add((N) key);
+                    double pushAmount = 0.75 * ((Double) influence.neighbors.get(key));
+                    double oX = layout.getX(key);
+                    double oY = layout.getY(key);
+                    Force force = new Force(oX, oY, Force.NO_DROPOFF.multiply(pushAmount).negate().bound(250));
+                    force.apply(tmp);
+                    unused.remove(key);
+                }
+                for (N key : unused) {
+                    double pushAmount = -0.25;
+                    double oX = layout.getX(key);
+                    double oY = layout.getY(key);
+                    Force force = new Force(oX, oY, Force.NO_DROPOFF.multiply(pushAmount).bound(150));
+                    force.apply(tmp);
+                }
+                layout.setLocation(n, tmp[0], tmp[1]);
             }
-//            for (N n : graph.getVertices()) {
-//                double myX = layout.getX(n);
-//                double myY = layout.getY(n);
-//                for (N key : graph.getVertices()) {
-//                    if (n == key) {
-//                        continue;
-//                    }
-//                    double[] pos = push(layout, n, key, 1.001, myX, myY, null, 300D);
-//                    myX = pos[0];
-//                    myY = pos[1];
-//                }
-//            }
             return iterCount++ > maxIters;
-        }
-
-        private <N, E> double[] push(AbstractLayout layout, N n, Object key, double amount, double myX, double myY, Set<N> unused) {
-            return push(layout, n, key, amount, myX, myY, unused, null);
-        }
-
-        static class PR {
-
-            private final int acode;
-            private final int bcode;
-
-            PR(Object a, Object b) {
-                acode = System.identityHashCode(a);
-                bcode = System.identityHashCode(b);
-            }
-
-            public int hashCode() {
-                return acode + 17 * bcode;
-            }
-
-            public boolean equals(Object o) {
-                if (o instanceof PR) {
-                    PR x = (PR) o;
-                    return (acode == x.acode && bcode == x.bcode)
-                            || (acode == x.bcode && bcode == x.acode);
-                }
-                return false;
-            }
-        }
-
-        private final Circle circle = new Circle(0,0);
-        private <N, E> double[] push(AbstractLayout layout, N n, Object key, double amount, double myX, double myY, Set<N> unused, Double limit) {
-            if (limit == null) {
-                limit = Double.MAX_VALUE;
-            }
-            double oX = layout.getX(key);
-            double oY = layout.getY(key);
-            circle.centerX = oX;
-            circle.centerY = oY;
-            double len = Math.abs(circle.distanceToCenter(myX, myY) * amount);
-            double angle = circle.angleOf(myX, myY) - 1;
-            circle.radius = len * amount;
-            double[] pos = circle.positionOf(angle);
-            if (Math.abs(pos[0] - oX) < 40) {
-                pos[0] = myX;
-            }
-            if (Math.abs(pos[1] - oY) < 40) {
-                pos[1] = myY;
-            }
-            if (unused != null) {
-                unused.remove(key);
-            }
-//            Circle nue = new Circle(new Point2D.Double(myX, myY));
-            circle.centerX = myX;
-            circle.centerY = myY;
-            double dist = circle.distanceToCenter(pos[0], pos[1]);
-            if (limit != Double.MAX_VALUE && Math.abs(dist) < limit) {
-                pos[0] = myX;
-                pos[1] = myY;
-            }
-            layout.setLocation(n, pos[0], pos[1]);
-            return pos;
         }
 
         private static final class Influences<N> {
@@ -299,8 +227,6 @@ public class Tensors {
                     neighbors.put(n, baseAmount);
                 }
             }
-
         }
-
     }
 }

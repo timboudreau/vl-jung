@@ -692,7 +692,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                 }
             }
             // Avoid div by zero
-            avgDist /= nodes.isEmpty() ? 0D : (double) nodes.size();
+            avgDist = nodes.isEmpty() ? 0D : avgDist / (double) nodes.size();
             for (E e : graph.getEdges()) {
                 Widget w = (Widget) findWidget(e);
                 if (w instanceof ConnectionWidget) {
@@ -707,7 +707,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             }
         }
 
-        private MoveProvider delegate = ActionFactory.createDefaultMoveProvider();
+        private final MoveProvider delegate = ActionFactory.createDefaultMoveProvider();
 
         @Override
         public void movementStarted(Widget widget) {
@@ -715,6 +715,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public void movementFinished(Widget widget) {
             delegate.movementFinished(widget);
             onMove((N) findObject(widget), widget);
@@ -726,14 +727,9 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public void setNewLocation(Widget widget, Point location) {
-            N node = null;
-            for (N n : getNodes()) {
-                if (findWidget(n) == widget) {
-                    node = n;
-                    break;
-                }
-            }
+            N node = (N) findObject(widget);
             if (node != null) {
                 layout.setLocation(node, location);
                 for (E e : graph.getOutEdges(node)) {

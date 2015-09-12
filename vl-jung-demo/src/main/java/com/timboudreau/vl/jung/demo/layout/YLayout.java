@@ -47,14 +47,7 @@ public class YLayout<N, E> extends AbstractLayout implements IterativeContext {
         if (arrangers.length == 1) {
             arranger = arrangers[0];
         } else if (arrangers.length == 0) {
-//            throw new IllegalArgumentException("No arrangers");
-            this.arranger = new Arranger(){
-
-                @Override
-                protected <N, E> boolean step(Graph<N, E> graph, AbstractLayout layout) {
-                    return true;
-                }
-            };
+            this.arranger = Arranger.EMPTY;
         } else {
             arranger = new MetaArranger(arrangers);
         }
@@ -102,6 +95,8 @@ public class YLayout<N, E> extends AbstractLayout implements IterativeContext {
 
     public static abstract class Arranger {
 
+        private static final Arranger EMPTY = new EmptyArranger();
+
         /**
          * return true if done
          */
@@ -117,6 +112,14 @@ public class YLayout<N, E> extends AbstractLayout implements IterativeContext {
 
         protected void reset() {
 
+        }
+    }
+
+    private static final class EmptyArranger extends Arranger {
+
+        @Override
+        protected <N, E> boolean step(Graph<N, E> graph, AbstractLayout layout) {
+            return true;
         }
     }
 

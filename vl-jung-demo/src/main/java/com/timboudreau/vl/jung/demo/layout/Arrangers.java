@@ -58,6 +58,7 @@ public class Arrangers {
         ConcentricCircles circs = new ConcentricCircles();
 //        return new YLayout(graph, circs, new CircleSwapper(circs));
 //        return new YLayout(graph, circs, new TensorArranger(), new GetOutOfEachOthersWay());
+//        return new YLayout(graph, circs, new TensorArranger(1200), new GetOutOfEachOthersWay());
         return new YLayout(graph, circs, new TensorArranger());
 //        return new YLayout(graph, new GroupCircles(), new Nothing());
     }
@@ -334,7 +335,7 @@ public class Arrangers {
             List<Integer> keys = new ArrayList<>(entryForCircle.keySet());
             Collections.sort(keys);
             Collections.reverse(keys);
-            double radius = Math.min(size.width / 2, size.height / 2);
+            double radius = Math.max(size.width / 2, size.height / 2);
 //            double radius = 2000;
 
             double radiusStep = radius / keys.size();
