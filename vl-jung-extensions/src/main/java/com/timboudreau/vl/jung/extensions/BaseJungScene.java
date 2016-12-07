@@ -495,7 +495,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
         public WidgetAction.State mouseClicked(Widget widget, WidgetAction.WidgetMouseEvent event) {
             E edge = (E) findObject(widget);
             HashSet<N> nue = new HashSet<>(graph.getEndpoints(edge));
-            Set<Object> selection = new HashSet<>(getSelectedObjects());
+            Set<Object> selection = new HashSet<Object>(getSelectedObjects());
             if (selection.isEmpty() || !event.isShiftDown()) {
                 setSelectedObjects(nue);
             } else {

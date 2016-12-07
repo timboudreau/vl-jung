@@ -60,7 +60,7 @@ public class DemoWidget<N, E> extends Widget {
         super(scene);
         lkp = Lookups.fixed(node);
         this.node = node;
-        setBackground(new Color(240, 240, 255));
+        setBackground(new Color(255, 255, 20));
         setForeground(Color.gray);
         getActions().addAction(ActionFactory.createInplaceEditorAction(new TextFieldInplaceEditor() {
 

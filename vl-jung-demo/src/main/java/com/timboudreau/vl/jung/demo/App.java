@@ -25,6 +25,7 @@
  */
 package com.timboudreau.vl.jung.demo;
 
+import com.google.common.base.Function;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
 import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
 import edu.uci.ics.jung.algorithms.layout.CircleLayout;
@@ -40,12 +41,12 @@ import edu.uci.ics.jung.algorithms.layout.SpringLayout2;
 import edu.uci.ics.jung.algorithms.layout.TreeLayout;
 import edu.uci.ics.jung.graph.DelegateForest;
 import edu.uci.ics.jung.graph.Forest;
-import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.UndirectedOrderedSparseMultigraph;
-import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.visualization.decorators.EdgeShape;
+import edu.uci.ics.jung.visualization.decorators.EdgeShape.Line;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -87,7 +88,6 @@ import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import org.apache.commons.collections15.Transformer;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.LookupEvent;
@@ -122,11 +122,11 @@ public class App {
 
         Layout layout;
         try {
-            layout = gf.forest == null ? new KKLayout(gf.graph) : new TreeLayout(gf.forest, 70, 70);
+            layout = gf.forest == null ? new CircleLayout(gf.graph) : new TreeLayout(gf.forest, 70, 70);
         } catch (IllegalArgumentException ex) {
-            layout = new KKLayout(gf.graph);
+            layout = new CircleLayout(gf.graph);
         }
-        final BaseJungScene scene = new SceneImpl(gf.graph, layout);
+        final BaseJungScene<String,String> scene = new SceneImpl(gf.graph, layout);
         jf.setLayout(new BorderLayout());
         jf.add(new JScrollPane(scene.createView()), BorderLayout.CENTER);
 
@@ -134,13 +134,13 @@ public class App {
         bar.setMargin(new Insets(5, 5, 5, 5));
         bar.setLayout(new FlowLayout(5));
         DefaultComboBoxModel<Layout> mdl = new DefaultComboBoxModel<>();
-        mdl.addElement(new KKLayout(gf.graph));
+        mdl.addElement(new CircleLayout(gf.graph));
         mdl.addElement(layout);
         if (gf.forest != null) {
             mdl.addElement(new BalloonLayout(gf.forest));
             mdl.addElement(new RadialTreeLayout(gf.forest));
         }
-        mdl.addElement(new CircleLayout(gf.graph));
+        mdl.addElement(new KKLayout(gf.graph));
         mdl.addElement(new FRLayout(gf.graph));
         mdl.addElement(new FRLayout2(gf.graph));
         mdl.addElement(new ISOMLayout(gf.graph));
@@ -152,6 +152,7 @@ public class App {
         final JCheckBox checkbox = new JCheckBox("Animate iterative layouts");
 
         scene.setLayoutAnimationFramesPerSecond(48);
+        scene.setBackground(Color.WHITE);
 
         final JComboBox<Layout> layouts = new JComboBox(mdl);
         layouts.setRenderer(new DefaultListCellRenderer() {
@@ -178,21 +179,24 @@ public class App {
         });
 
         bar.add(new JLabel(" Connection Shape"));
-        DefaultComboBoxModel<Transformer<Context<Graph<String, String>, String>, Shape>> shapes = new DefaultComboBoxModel<>();
-        shapes.addElement(new EdgeShape.QuadCurve<String, String>());
-        shapes.addElement(new EdgeShape.BentLine<String, String>());
-        shapes.addElement(new EdgeShape.CubicCurve<String, String>());
-        shapes.addElement(new EdgeShape.Line<String, String>());
-        shapes.addElement(new EdgeShape.Box<String, String>());
-        shapes.addElement(new EdgeShape.Orthogonal<String, String>());
-        shapes.addElement(new EdgeShape.Wedge<String, String>(10));
+        DefaultComboBoxModel<Object> shapes = new DefaultComboBoxModel<>();
+        EdgeShape<String,String> es = new EdgeShape<>(gf.graph);
+        
+        shapes.addElement(es.new QuadCurve());
+        shapes.addElement(es.new BentLine());
+        shapes.addElement(es.new CubicCurve());
+        shapes.addElement(es.new Line());
+        shapes.addElement(es.new Box());
+        shapes.addElement(es.new Orthogonal());
+        shapes.addElement(es.new Wedge(10));
 
-        final JComboBox<Transformer<Context<Graph<String, String>, String>, Shape>> shapesBox = new JComboBox<>(shapes);
+        final JComboBox<Object> shapesBox = new JComboBox<>(shapes);
         shapesBox.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent ae) {
-                Transformer<Context<Graph<String, String>, String>, Shape> xform = (Transformer<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
+                Function<String,Shape> xform = (Function<String,Shape>) shapesBox.getSelectedItem();
+//                Transformer<Context<Graph<String, String>, String>, Shape> xform = (Transformer<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
                 scene.setConnectionEdgeShape(xform);
             }
         });
@@ -203,7 +207,7 @@ public class App {
                 return super.getListCellRendererComponent(jlist, o, i, bln, bln1); //To change body of generated methods, choose Tools | Templates.
             }
         });
-        shapesBox.setSelectedItem(new EdgeShape.QuadCurve<>());
+        shapesBox.setSelectedItem(es.new QuadCurve());
         bar.add(shapesBox);
         jf.add(bar, BorderLayout.NORTH);
         bar.add(new MinSizePanel(scene.createSatelliteView()));
@@ -218,7 +222,7 @@ public class App {
             public void resultChanged(LookupEvent le) {
                 Lookup.Result<String> res = (Lookup.Result<String>) le.getSource();
                 StringBuilder sb = new StringBuilder("<html>");
-                List<String> l = new ArrayList<>(res.allInstances());
+                List<String> l = new ArrayList<String>(res.allInstances());
                 Collections.sort(l);
                 for (String s : l) {
                     if (sb.length() != 6) {

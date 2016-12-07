@@ -25,11 +25,14 @@
  */
 package com.timboudreau.vl.jung;
 
+import com.google.common.base.Function;
 import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.graph.util.Pair;
 import edu.uci.ics.jung.visualization.decorators.EdgeShape;
+import edu.uci.ics.jung.visualization.decorators.EdgeShape.CubicCurve;
+import edu.uci.ics.jung.visualization.decorators.EdgeShape.Orthogonal;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -39,7 +42,6 @@ import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
-import org.apache.commons.collections15.Transformer;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
@@ -51,37 +53,67 @@ import org.netbeans.api.visual.widget.Widget;
 public class JungConnectionWidget<V, E> extends Widget {
     private Stroke stroke = new BasicStroke(2);
     private final E edge;
-    private Transformer<Context<Graph<V, E>, E>, Shape> transformer;
-
+    private Function<E, Shape> transformer;
+    
     public static <V, E> JungConnectionWidget<V, E> createQuadratic(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.QuadCurve<V, E>(), edge);
+        return new JungConnectionWidget(scene, EdgeShape.quadCurve(scene.graph()), edge);
     }
 
-    public static <V, E> JungConnectionWidget<V, E> createCubic(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.CubicCurve<V, E>(), edge);
+    public static <V,E> JungConnectionWidget<V,E> createCubic(JungScene<V,E> scene, E edge) {
+        CubicCurve curve = new EdgeShape<>(scene.graph).new CubicCurve();
+        return new JungConnectionWidget<>(scene, curve, edge);
     }
 
-    public static <V, E> JungConnectionWidget<V, E> createOrthogonal(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Orthogonal<V, E>(), edge);
+    public static <V,E>  JungConnectionWidget<V,E>  createOrthogonal(JungScene<V,E>  scene, E edge) {
+        Orthogonal orth = EdgeShape.orthogonal(scene.graph);
+        return new JungConnectionWidget<> (scene, orth, edge);
+    }
+    
+    static class ES<V,E> extends EdgeShape<V,E> {
+
+        public ES(Graph<V, E> g) {
+            super(g);
+        }
+        
+        BentLine createBentLine() {
+            return new BentLine();
+        }
+        
+        Loop createLoop() {
+            return new Loop();
+        }
+        
+        Box createBox() {
+            return new Box();
+        }
     }
 
-    public static <V, E> JungConnectionWidget<V, E> createBent(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.BentLine<V, E>(), edge);
+    public static <V,E>  JungConnectionWidget createBent(JungScene scene, E edge) {
+        EdgeShape.BentLine bentLine = new ES<>(scene.graph).createBentLine();
+        Function<E,Shape> f = bentLine;
+        return new JungConnectionWidget<>(scene, f, edge);
     }
 
-    public static <V, E> JungConnectionWidget<V, E> createLoop(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Loop<V, E>(), edge);
+    public static <V,E>  JungConnectionWidget createLoop(JungScene scene, E edge) {
+        Function<E,Shape> loop = new ES<>(scene.graph).createLoop();
+        return new JungConnectionWidget<>(scene, loop, edge);
     }
 
-    public static <V, E> JungConnectionWidget<V, E> createBox(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Box<V, E>(), edge);
+    public static <V,E>  JungConnectionWidget createBox(JungScene scene, E edge) {
+        Function<E,Shape> box = new ES<>(scene.graph).createBox();
+        return new JungConnectionWidget<>(scene, box, edge);
     }
-
+    
     public JungConnectionWidget(JungScene<V, E> scene, E edge) {
-        this(scene, new EdgeShape.QuadCurve<V, E>(), edge);
+        this(scene, defaultCurve(scene, edge), edge);
+    }
+    
+    static <V,E> Function<E,Shape> defaultCurve(JungScene<V,E> scene, E edge) {
+        Function<E,Shape> quadCurve = new ES<>(scene.graph).new QuadCurve();
+        return quadCurve;
     }
 
-    public JungConnectionWidget(JungScene<V, E> scene, Transformer<Context<Graph<V, E>, E>, Shape> transformer, E edge) {
+    public JungConnectionWidget(JungScene<V, E> scene, Function<E, Shape> transformer, E edge) {
         super(scene);
         this.edge = edge;
         this.transformer = transformer;
@@ -89,8 +121,10 @@ public class JungConnectionWidget<V, E> extends Widget {
         setOpaque(false);
     }
 
-    public void setTransformer(Transformer<Context<Graph<V, E>, E>, Shape> transformer) {
+    public void setTransformer(Function<E, Shape> transformer) {
         this.transformer = transformer;
+        Function<Context<Graph<V, E>, E>, Shape> f =  null;
+        
     }
 
     @Override
@@ -132,18 +166,19 @@ public class JungConnectionWidget<V, E> extends Widget {
         
         Graph<V, E> graph = getGraph();
         Context<Graph<V, E>, E> c = Context.getInstance(graph, edge);
-        Shape edgeShape = transformer.transform(c);
+        
+        Shape edgeShape = transformer.apply(edge);
 
         Pair<V> nodes = graph.getEndpoints(edge);
         Layout<V, E> layout = scene.layout;
 
         Widget w1 = scene.findWidget(nodes.getFirst());
-        Rectangle r1 = w1.getClientArea();
+//        Rectangle r1 = w1.getClientArea();
         Widget w2 = scene.findWidget(nodes.getSecond());
-        Rectangle r2 = w2.getClientArea();
+//        Rectangle r2 = w2.getClientArea();
 
-        Point2D firstLoc = layout.transform(nodes.getFirst());
-        Point2D secondLoc = layout.transform(nodes.getSecond());
+        Point2D firstLoc = layout.apply(nodes.getFirst());
+        Point2D secondLoc = layout.apply(nodes.getSecond());
 //        if (r1 != null) {
 //            r1.x = 0;
 //            r1.y = 0;

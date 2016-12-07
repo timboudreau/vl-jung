@@ -48,7 +48,7 @@ public final class RingsWidget<N, E> extends Widget {
 
     public RingsWidget(JungScene<N, E> scene) {
         super(scene);
-        setForeground(new Color(220, 220, 80));
+        setForeground(Color.ORANGE);
     }
 
     public void setStroke(Stroke stroke) {
@@ -75,7 +75,7 @@ public final class RingsWidget<N, E> extends Widget {
                 if (radius == null) {
                     continue;
                 }
-                Point2D p = layout.transform(v);
+                Point2D p = layout.apply(v);
                 ellipse.setFrame(-radius, -radius, 2 * radius, 2 * radius);
                 AffineTransform at = AffineTransform.getTranslateInstance(p.getX(), p.getY());
                 // Transform it to the center of the widget
@@ -106,7 +106,7 @@ public final class RingsWidget<N, E> extends Widget {
                 if (radius == null) {
                     continue;
                 }
-                Point2D p = layout.transform(v);
+                Point2D p = layout.apply(v);
                 ellipse.setFrame(-radius, -radius, 2 * radius, 2 * radius);
                 AffineTransform at = AffineTransform.getTranslateInstance(p.getX(), p.getY());
 
