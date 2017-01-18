@@ -59,7 +59,7 @@ public class Arrangers {
 //        return new YLayout(graph, circs, new CircleSwapper(circs));
 //        return new YLayout(graph, circs, new TensorArranger(), new GetOutOfEachOthersWay());
 //        return new YLayout(graph, circs, new TensorArranger(1200), new GetOutOfEachOthersWay());
-        return new YLayout(graph, circs, new TensorArranger());
+        return new YLayout(graph, circs, new LineFinder(), new TensorArranger());
 //        return new YLayout(graph, new GroupCircles(), new Nothing());
     }
 

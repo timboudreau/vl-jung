@@ -63,7 +63,7 @@ class SceneImpl extends BaseJungScene<String, String> {
     @Override
     protected Widget createNodeWidget(String node) {
         DemoWidget<String, String> w = new DemoWidget<String, String>(this, node);
-        w.setLabel(node + "");
+        w.setLabel(node);
         w.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         w.getActions().addAction(new MultiMoveAction(relatedProvider(), moveProvider()));
         return w;
@@ -80,7 +80,7 @@ class SceneImpl extends BaseJungScene<String, String> {
             if (!EventQueue.isDispatchThread()) {
                 EventQueue.invokeLater(this);
             } else if (widget != null && hover != null) {
-                Pair<String> endpoints = graph().getEndpoints(hover);
+//                Pair<String> endpoints = graph().getEndpoints(hover);
 //                String lbl = "EDGE " + hover + " (" + endpoints.getFirst() + " -> " + endpoints.getSecond() + ")";
                 Rectangle r = widget.getClientArea();
                 Point p = new Point((int) r.getCenterX(), (int) r.getCenterY());

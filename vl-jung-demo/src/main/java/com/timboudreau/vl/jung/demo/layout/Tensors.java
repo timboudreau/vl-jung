@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, tim
+ * Copyright (c) 2015, Tim Boudreau
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -118,7 +118,7 @@ public class Tensors {
 
     }
 
-    static class TensorArranger extends Arranger {
+    static class TensorArranger extends YLayout.Arranger {
 
         private final List<Influences> influences = new LinkedList<>();
         int iterCount;
@@ -161,30 +161,35 @@ public class Tensors {
                 used.add(n);
                 tmp[0] = layout.getX(n);
                 tmp[1] = layout.getY(n);
+                Influences<N> i = influence;
 
-                for (Object key : influence.influencers.keySet()) {
-                    if (key == n) {
+//                for (Object key : influence.influencers.keySet()) {
+                for (Influences.Influence inf : i.influencers) {
+                    N node = (N) inf.node;
+                    if (node == n) {
                         continue;
                     }
-                    unused.remove(key);
-                    used.add((N) key);
-                    double pushAmount = 0.985 * ((Double) influence.influencers.get(key));
-                    double oX = layout.getX(key);
-                    double oY = layout.getY(key);
+                    unused.remove(node);
+                    used.add(node);
+                    double pushAmount = 0.985 * inf.influence;//((Double) influence.influencers.get(key));
+                    double oX = layout.getX(node);
+                    double oY = layout.getY(node);
                     Force force = new Force(oX, oY, Force.NO_DROPOFF.multiply(pushAmount));
                     force.apply(tmp);
                 }
-                for (Object key : influence.neighbors.keySet()) {
-                    if (key == n) {
+//                for (Object key : influence.neighbors.keySet()) {
+                for (Influences.Influence inf : i.neighbors) {
+                    N node = (N) inf.node;
+                    if (node == n) {
                         continue;
                     }
-                    used.add((N) key);
-                    double pushAmount = 0.75 * ((Double) influence.neighbors.get(key));
-                    double oX = layout.getX(key);
-                    double oY = layout.getY(key);
+                    used.add(node);
+                    double pushAmount = 0.75 * inf.influence; //((Double) influence.neighbors.get(node));
+                    double oX = layout.getX(node);
+                    double oY = layout.getY(node);
                     Force force = new Force(oX, oY, Force.NO_DROPOFF.multiply(pushAmount).negate().bound(250));
                     force.apply(tmp);
-                    unused.remove(key);
+                    unused.remove(node);
                 }
                 for (N key : unused) {
                     double pushAmount = -0.25;
@@ -201,8 +206,10 @@ public class Tensors {
         private static final class Influences<N> {
 
             private final N node;
-            private final Map<N, Double> influencers = new HashMap<>();
-            private final Map<N, Double> neighbors = new HashMap<>();
+//            private final Map<N, Double> influencers = new HashMap<>();
+//            private final Map<N, Double> neighbors = new HashMap<>();
+            private final Set<Influence<N>> influencers = new HashSet<>();
+            private final Set<Influence<N>> neighbors = new HashSet<>();
 
             public Influences(N node, Graph<N, ?> graph) {
                 this.node = node;
@@ -217,14 +224,34 @@ public class Tensors {
                     if (n == this.node) {
                         continue;
                     }
-                    influencers.put(n, baseAmount);
+//                    influencers.put(n, baseAmount);
+                    influencers.add(new Influence<N>(baseAmount, n));
                     addInfluencers(n, inf, baseAmount / 2D);
                 }
                 for (N n : inf.getNeighbors(node)) {
                     if (n == this.node) {
                         continue;
                     }
-                    neighbors.put(n, baseAmount);
+//                    neighbors.put(n, baseAmount);
+                    neighbors.add(new Influence<N>(baseAmount, n));
+                }
+            }
+            
+            static final class Influence<N> {
+                final double influence;
+                final N node;
+
+                public Influence(double influence, N node) {
+                    this.influence = influence;
+                    this.node = node;
+                }
+                
+                public boolean equals(Object o) {
+                    return o instanceof Influence && ((Influence) o).node.equals(node);
+                }
+                
+                public int hashCode() {
+                    return node.hashCode() * 37;
                 }
             }
         }
