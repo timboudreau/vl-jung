@@ -27,9 +27,9 @@ package com.timboudreau.vl.jung;
 
 import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.graph.util.Pair;
 import edu.uci.ics.jung.visualization.decorators.EdgeShape;
+import edu.uci.ics.jung.visualization.decorators.ParallelEdgeShapeTransformer;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -39,7 +39,8 @@ import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
-import org.apache.commons.collections15.Transformer;
+import java.util.Map;
+import java.util.WeakHashMap;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
@@ -49,47 +50,48 @@ import org.netbeans.api.visual.widget.Widget;
  * @author Tim Boudreau
  */
 public class JungConnectionWidget<V, E> extends Widget {
-    private Stroke stroke = new BasicStroke(2);
+    private Stroke stroke = new BasicStroke(4);
     private final E edge;
-    private Transformer<Context<Graph<V, E>, E>, Shape> transformer;
+    private ParallelEdgeShapeTransformer<V,E> transformer;
 
+    static final Map<Graph,EdgeShape.QuadCurve> m = new WeakHashMap<>();
+
+    @SuppressWarnings("unchecked")
     public static <V, E> JungConnectionWidget<V, E> createQuadratic(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.QuadCurve<V, E>(), edge);
+        EdgeShape.QuadCurve curve = m.get(scene.graph);
+        if (curve != null) {
+            return new JungConnectionWidget<>(scene, curve, edge);
+        }
+        curve = EdgeShape.quadCurve(scene.graph);
+        m.put(scene.graph, curve);
+        return new JungConnectionWidget<>(scene, curve, edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createCubic(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.CubicCurve<V, E>(), edge);
+        return new JungConnectionWidget<>(scene, EdgeShape.cubicCurve(scene.graph), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createOrthogonal(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Orthogonal<V, E>(), edge);
+        return new JungConnectionWidget<>(scene, EdgeShape.orthogonal(scene.graph), edge);
     }
 
-    public static <V, E> JungConnectionWidget<V, E> createBent(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.BentLine<V, E>(), edge);
-    }
-
-    public static <V, E> JungConnectionWidget<V, E> createLoop(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Loop<V, E>(), edge);
-    }
-
-    public static <V, E> JungConnectionWidget<V, E> createBox(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Box<V, E>(), edge);
-    }
+//    public static <V, E> JungConnectionWidget<V, E> createBent(JungScene<V, E> scene, E edge) {
+//        return new JungConnectionWidget<>(scene, EdgeShape.BentLine<V, E>(), edge);
+//    }
 
     public JungConnectionWidget(JungScene<V, E> scene, E edge) {
-        this(scene, new EdgeShape.QuadCurve<V, E>(), edge);
+        this(scene, EdgeShape.quadCurve(scene.graph), edge);
     }
 
-    public JungConnectionWidget(JungScene<V, E> scene, Transformer<Context<Graph<V, E>, E>, Shape> transformer, E edge) {
+    public JungConnectionWidget(JungScene<V, E> scene, ParallelEdgeShapeTransformer<V, E> transformer, E edge) {
         super(scene);
         this.edge = edge;
         this.transformer = transformer;
-        setForeground(new Color(190, 190, 255));
+        setForeground(new Color(120, 120, 235));
         setOpaque(false);
     }
 
-    public void setTransformer(Transformer<Context<Graph<V, E>, E>, Shape> transformer) {
+    public void setTransformer(ParallelEdgeShapeTransformer<V, E> transformer) {
         this.transformer = transformer;
     }
 
@@ -131,19 +133,18 @@ public class JungConnectionWidget<V, E> extends Widget {
         JungScene<V,E> scene = (JungScene<V,E>) getScene();
         
         Graph<V, E> graph = getGraph();
-        Context<Graph<V, E>, E> c = Context.getInstance(graph, edge);
-        Shape edgeShape = transformer.transform(c);
+        Shape edgeShape = transformer.apply(edge);
 
         Pair<V> nodes = graph.getEndpoints(edge);
         Layout<V, E> layout = scene.layout;
 
         Widget w1 = scene.findWidget(nodes.getFirst());
-        Rectangle r1 = w1.getClientArea();
+//        Rectangle r1 = w1.getClientArea();
         Widget w2 = scene.findWidget(nodes.getSecond());
-        Rectangle r2 = w2.getClientArea();
+//        Rectangle r2 = w2.getClientArea();
 
-        Point2D firstLoc = layout.transform(nodes.getFirst());
-        Point2D secondLoc = layout.transform(nodes.getSecond());
+        Point2D firstLoc = layout.apply(nodes.getFirst());
+        Point2D secondLoc = layout.apply(nodes.getSecond());
 //        if (r1 != null) {
 //            r1.x = 0;
 //            r1.y = 0;

@@ -3,13 +3,25 @@
     <parent>
         <groupId>com.timboudreau</groupId>
         <artifactId>visual-library-jung</artifactId>
-        <version>1.1</version>
+        <version>2.0</version>
     </parent>    
     <modelVersion>4.0.0</modelVersion>
     <artifactId>vl-jung</artifactId>
     <packaging>jar</packaging>
     <name>Visual Library + Jung</name>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <repositories>
         <!--
         Repository hosting NetBeans modules, especially APIs.

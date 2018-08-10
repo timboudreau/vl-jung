@@ -44,15 +44,14 @@ import edu.uci.ics.jung.graph.Forest;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.UndirectedOrderedSparseMultigraph;
-import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.graph.util.Pair;
 import edu.uci.ics.jung.visualization.decorators.EdgeShape;
+import edu.uci.ics.jung.visualization.decorators.ParallelEdgeShapeTransformer;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Insets;
-import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -90,7 +89,6 @@ import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import org.apache.commons.collections15.Transformer;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.LookupEvent;
@@ -182,21 +180,19 @@ public class App {
         });
 
         bar.add(new JLabel(" Connection Shape"));
-        DefaultComboBoxModel<Transformer<Context<Graph<String, String>, String>, Shape>> shapes = new DefaultComboBoxModel<>();
-        shapes.addElement(new EdgeShape.QuadCurve<String, String>());
-        shapes.addElement(new EdgeShape.BentLine<String, String>());
-        shapes.addElement(new EdgeShape.CubicCurve<String, String>());
-        shapes.addElement(new EdgeShape.Line<String, String>());
-        shapes.addElement(new EdgeShape.Box<String, String>());
-        shapes.addElement(new EdgeShape.Orthogonal<String, String>());
-        shapes.addElement(new EdgeShape.Wedge<String, String>(10));
+        DefaultComboBoxModel<ParallelEdgeShapeTransformer<String,String>> shapes = new DefaultComboBoxModel<>();
+        shapes.addElement(EdgeShape.quadCurve(gf.graph));
+        shapes.addElement(EdgeShape.cubicCurve(gf.graph));
+//        shapes.addElement(EdgeShape.line(gf.graph));
+        shapes.addElement(EdgeShape.orthogonal(gf.graph));
+        shapes.addElement(EdgeShape.wedge(gf.graph,10));
 
-        final JComboBox<Transformer<Context<Graph<String, String>, String>, Shape>> shapesBox = new JComboBox<>(shapes);
+        final JComboBox<ParallelEdgeShapeTransformer<String,String>> shapesBox = new JComboBox<>(shapes);
         shapesBox.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent ae) {
-                Transformer<Context<Graph<String, String>, String>, Shape> xform = (Transformer<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
+                ParallelEdgeShapeTransformer<String,String> xform = (ParallelEdgeShapeTransformer<String,String>) shapesBox.getSelectedItem();
                 scene.setConnectionEdgeShape(xform);
             }
         });
@@ -207,7 +203,7 @@ public class App {
                 return super.getListCellRendererComponent(jlist, o, i, bln, bln1); //To change body of generated methods, choose Tools | Templates.
             }
         });
-        shapesBox.setSelectedItem(new EdgeShape.QuadCurve<>());
+        shapesBox.setSelectedItem(EdgeShape.quadCurve(gf.graph));
         bar.add(shapesBox);
         jf.add(bar, BorderLayout.NORTH);
         bar.add(new MinSizePanel(scene.createSatelliteView()));

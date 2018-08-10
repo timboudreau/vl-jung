@@ -106,13 +106,7 @@ public class Force {
         }
     }
 
-    public static final Strength NO_DROPOFF = new Strength() {
-
-        @Override
-        public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
-            return 1D;
-        }
-    };
+    public static final Strength NO_DROPOFF = new NoDropoffStrength();
 
     public static final Strength INVERSE_SQUARE = new InverseSquareLaw();
     public static final Strength LINEAR = new Linear();
@@ -122,13 +116,7 @@ public class Force {
     }
     
     public static Strength negate(final Strength strength) {
-        return new Strength() {
-
-            @Override
-            public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
-                return strength.computeStrength(centerX, centerY, x, y, distance) * -1;
-            }
-        };
+        return new NegatingStrength(strength);
     }
     
     private static class Linear implements Strength {
@@ -161,16 +149,50 @@ public class Force {
     }
 
     public static Strength bounded(final Strength strength, final double maxDistance) {
-        return new Strength() {
+        return new BoundedStrength(maxDistance, strength);
+    }
 
-            @Override
-            public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
-                if (distance > maxDistance) {
-                    return 0;
-                }
-                return strength.computeStrength(centerX, centerY, x, y, distance);
+    private static class BoundedStrength implements Strength {
+
+        private final double maxDistance;
+        private final Strength strength;
+
+        public BoundedStrength(double maxDistance, Strength strength) {
+            this.maxDistance = maxDistance;
+            this.strength = strength;
+        }
+
+        @Override
+        public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
+            if (distance > maxDistance) {
+                return 0;
             }
+            return strength.computeStrength(centerX, centerY, x, y, distance);
+        }
+    }
 
-        };
+    private static class NegatingStrength implements Strength {
+
+        private final Strength strength;
+
+        public NegatingStrength(Strength strength) {
+            this.strength = strength;
+        }
+
+        @Override
+        public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
+            return strength.computeStrength(centerX, centerY, x, y, distance) * -1;
+        }
+    }
+
+    private static class NoDropoffStrength implements Strength {
+
+        public NoDropoffStrength() {
+        }
+
+        @Override
+        public double computeStrength(double centerX, double centerY, double x, double y, double distance) {
+            return 1D;
+        }
     }
 }

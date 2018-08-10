@@ -31,23 +31,13 @@ import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.event.GraphEvent;
 import edu.uci.ics.jung.graph.event.GraphEventListener;
-import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.graph.util.Pair;
-import java.awt.Point;
-import java.awt.Shape;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
+import edu.uci.ics.jung.visualization.decorators.ParallelEdgeShapeTransformer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JComponent;
-import javax.swing.Timer;
-import org.apache.commons.collections15.Transformer;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.MoveProvider;
 import org.netbeans.api.visual.action.WidgetAction;
@@ -55,10 +45,8 @@ import org.netbeans.api.visual.graph.GraphScene;
 import org.netbeans.api.visual.layout.SceneLayout;
 import org.netbeans.api.visual.model.ObjectSceneEvent;
 import org.netbeans.api.visual.model.ObjectSceneEventType;
-import org.netbeans.api.visual.widget.ConnectionWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.Lookup;
-import org.openide.util.Parameters;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
@@ -78,15 +66,10 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
 
     protected final Graph<N, E> graph;
     protected Layout<N, E> layout;
-    private final LayoutAdapter sceneLayout = new LayoutAdapter();
+    private final LayoutAdapter<N, E> sceneLayout;
     private boolean initialized;
     private SelectByClickAction clickAction;
     private final GraphSelection selection = new GraphSelection<>(this);
-    private LayoutAnimationEvaluator evaluator = new LayoutAnimationEvaluator();
-    private boolean animate = true;
-    private final ActionListener timerListener = new TimerListener();
-    private int fastForwardIterations = 300;
-    private final Timer timer = new Timer(1000 / 24, timerListener);
     private final Lookup lkp;
 
     /**
@@ -100,14 +83,14 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     protected JungScene(Graph<N, E> graph, Layout layout) {
         this.graph = graph;
         this.layout = layout;
-        timer.setRepeats(true);
-        timer.setCoalesce(true);
-        timer.setInitialDelay(200);
-        timer.stop();
+        sceneLayout = new LayoutAdapter<>(this, layout, new GraphSceneAdapter<>(this), new AnimationController(), this::nodeMoved);
         if (graph instanceof ObservableGraph<?, ?>) {
             ((ObservableGraph<N, E>) graph).addGraphEventListener(new GraphEventAdapter());
         }
         final InstanceContent content = new InstanceContent();
+        content.add(sceneLayout);
+        content.add(sceneLayout.animator());
+        content.add(graph);
         lkp = new AbstractLookup(content);
         // Export the selection as the contents of the lookup, for external
         // components to monitor the selection
@@ -158,6 +141,10 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             relatedProvider = new RelatedProvider();
         }
         return relatedProvider;
+    }
+
+    protected void nodeMoved() {
+        // do nothing
     }
 
     private class RelatedProvider implements MultiMoveAction.RelatedWidgetProvider {
@@ -244,8 +231,8 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             sceneLayout.performLayout();
         }
         JComponent view = super.createView();
-        if (!was && layout instanceof IterativeContext && animate) {
-            startAnimation();
+        if (!was && layout instanceof IterativeContext && sceneLayout.animator().isAnimate()) {
+            sceneLayout.animator().start();
         }
         return view;
     }
@@ -263,7 +250,6 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param animate Animate the transition of node positions
      */
     public final void performLayout(boolean animate) {
-//        sceneLayout.invokeLayout();
         sceneLayout.performLayout(animate);
     }
 
@@ -285,7 +271,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param val The number of iterations; &lt;=0 equals none.
      */
     public final void setFastForwardIterations(int val) {
-        this.fastForwardIterations = val;
+        sceneLayout.animator().setFastForwardIterations(val);
     }
 
     /**
@@ -295,31 +281,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param animate If true, animate the node widgets to their new locations
      */
     public final void setGraphLayout(Layout<N, E> layout, boolean animate) {
-        assert layout != null : "Layout null";
-        timer.stop();
-        this.layout = layout;
-        sceneLayout.performLayout(animate);
-        if (this.animate && layout instanceof IterativeContext && getView() != null) {
-            startAnimation();
-        } else if (!this.animate && layout instanceof IterativeContext) {
-            // Fast forward it a bit
-            IterativeContext ctx = (IterativeContext) layout;
-            if (!ctx.done() && fastForwardIterations > 0) {
-                try {
-                    for (int i = 0; i < fastForwardIterations; i++) {
-                        ctx.step();
-                        if (ctx.done()) {
-                            break;
-                        }
-                    }
-                } catch (Exception e) {
-                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, e);
-                }
-            }
-            sceneLayout.performLayout(true);
-            validate();
-            repaint();
-        }
+        sceneLayout.setGraphLayout(layout, animate);
     }
 
     /**
@@ -331,7 +293,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @return Whether or not to animate
      */
     public final boolean isAnimateIterativeLayouts() {
-        return animate;
+        return sceneLayout.animator().isAnimate();
     }
 
     /**
@@ -343,15 +305,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param val to animate or not
      */
     public final void setAnimateIterativeLayouts(boolean val) {
-        boolean old = this.animate;
-        if (old != val) {
-            this.animate = val;
-            if (val && this.layout instanceof IterativeContext && getView() != null) {
-                startAnimation();
-            } else if (!val) {
-                timer.stop();
-            }
-        }
+        sceneLayout.animator().setAnimate(val);
     }
 
     /**
@@ -362,11 +316,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param fps Frames per second - must be >= 1
      */
     public final void setLayoutAnimationFramesPerSecond(int fps) {
-        if (fps < 1) {
-            throw new IllegalArgumentException("Frame rate must be at least 1. "
-                    + "Use setAnimateIterativeLayouts() to disable animation.");
-        }
-        timer.setDelay(1000 / fps);
+        sceneLayout.animator().setFramesPerSecond(fps);
     }
 
     /**
@@ -378,17 +328,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @return The requested frame rate
      */
     public int getAnimationFramesPerSecond() {
-        int delay = timer.getDelay();
-        return delay / 1000;
-    }
-
-    /**
-     * Start the animation timer and reset the evaluator's count of
-     * insignificant changes.
-     */
-    private void startAnimation() {
-        evaluator.reset();
-        timer.start();
+        return sceneLayout.animator().getFramesPerSecond();
     }
 
     /**
@@ -401,7 +341,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     }
 
     /**
-     * Returns an AutoCloseable which can be used in a try-with-resources loop
+     * Returns an AutoCloseable which can be used in a try-with-resources structure
      * to modify the graph and automatically sync the widgets on-screen with the
      * nodes on close.
      *
@@ -542,11 +482,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      */
     public final WidgetAction createNodeMoveAction() {
         return ActionFactory.createMoveAction(ActionFactory.createFreeMoveStrategy(),
-                sceneLayout);
-    }
-
-    protected MoveProvider moveProvider() {
-        return sceneLayout;
+                sceneLayout.moveProvider());
     }
 
     /**
@@ -557,7 +493,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param transformer An thing which makes line shapes
      */
     @SuppressWarnings(value = "unchecked")
-    public void setConnectionEdgeShape(Transformer<Context<Graph<N, E>, E>, Shape> transformer) {
+    public void setConnectionEdgeShape(ParallelEdgeShapeTransformer<N, E> transformer) {
         Set<Widget> parents = new HashSet<>();
         for (E edge : getEdges()) {
             Widget w = findWidget(edge);
@@ -584,7 +520,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @return A move provider
      */
     protected final MoveProvider createMoveProvider() {
-        return sceneLayout;
+        return sceneLayout.moveProvider();
     }
 
     /**
@@ -598,36 +534,14 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     }
 
     /**
-     * Set the object which will decide when animated JUNG layouts have done
-     * everything useful they're going to do.
-     *
-     * @param eval An evaluator
-     * @see LayoutAnimationEvaluator
-     */
-    public void setLayoutAnimationEvaluator(LayoutAnimationEvaluator eval) {
-        Parameters.notNull("eval", eval);
-        this.evaluator = eval;
-    }
-
-    /**
-     * Get the object which decides when any animated JUNG layout has done
-     * everything useful it is going to do
-     *
-     * @return An evaluator
-     * @see LayoutAnimationEvaluator
-     */
-    public LayoutAnimationEvaluator getLayoutAnimationEvaluator() {
-        return evaluator;
-    }
-
-    /**
      * Adapter which implements SceneLayout and uses the layout logic of the
      * JUNG layout. Also acts as our MoveProvider which will tell the layout
      * about user-made changes to node positions, so these are remembered
      */
-    private class LayoutAdapter extends SceneLayout implements MoveProvider {
+    /*
+    private class LA extends SceneLayout implements MoveProvider {
 
-        LayoutAdapter() {
+        LA() {
             super(JungScene.this);
         }
 
@@ -746,6 +660,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             delegate.setNewLocation(widget, location);
         }
     }
+    */
 
     /**
      * Create an action for selecting a widget by clicking it. To disable that
@@ -827,35 +742,6 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                     throw new AssertionError(ge.getType());
             }
             validate();
-        }
-    }
-
-    private class TimerListener implements ActionListener {
-
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (!animate) {
-                return;
-            }
-            if (layout instanceof IterativeContext) {
-                IterativeContext c = (IterativeContext) layout;
-                try {
-                    c.step();
-                } catch (Exception ex) {
-                    // e.g. IllegalArgumentException: Unexpected mathematical result in FRLayout:calcPositions
-                    // Some layouts are buggy.
-//                    Logger.getLogger(JungScene.class.getName()).log(Level.INFO, null, ex);
-                    ex.printStackTrace();
-//                    timer.stop();
-                }
-                if (c.done()) {
-                    timer.stop();
-                }
-                getSceneLayout().invokeLayout();
-                validate();
-                repaint();
-            }
         }
     }
 }

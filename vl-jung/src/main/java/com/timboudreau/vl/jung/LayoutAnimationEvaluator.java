@@ -1,7 +1,5 @@
 package com.timboudreau.vl.jung;
 
-import edu.uci.ics.jung.algorithms.layout.Layout;
-
 /**
  * Many JUNG layouts never <i>quite</i> settle into a stable state, but leave
  * the nodes permanently jiggling by a few pixels.  Animated JUNG layouts implement
@@ -49,7 +47,7 @@ public class LayoutAnimationEvaluator {
      */
     public static LayoutAnimationEvaluator NO_OP = new LayoutAnimationEvaluator() {
         @Override
-        protected boolean animationIsFinished(double min, double max, double average, Layout<?, ?> layout) {
+        protected boolean animationIsFinished(double min, double max, double average) {
             return false;
         }
     };
@@ -123,7 +121,7 @@ public class LayoutAnimationEvaluator {
      * different characteristics
      * @return True if no significant moves have occurred
      */
-    protected boolean test (double min, double max, double average, Layout<?,?> layout) {
+    protected boolean test (double min, double max, double average) {
         return max <= getDistanceConsideredStable();
     }
     
@@ -150,12 +148,12 @@ public class LayoutAnimationEvaluator {
      * this is such a case
      * @return True if no significant moves have occurred
      */
-    protected boolean animationIsFinished(double min, double max, double average, Layout<?,?> layout) {
+    protected boolean animationIsFinished(double min, double max, double average) {
         if (callCount++ < minIterations) {
             return false;
         }
 //        System.out.println(min + " <-> " + max + "  ::  " + average);
-        boolean result = test(min, max, average, layout);
+        boolean result = test(min, max, average);
         if (!result) {
             reset();
         } else {

@@ -179,6 +179,15 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
         }
         return edgeClickSelect;
     }
+    
+    protected void nodeMoved() {
+//        connectionLayer.repaint();
+        connectionLayer.revalidate();
+        connectionLayer.repaint();
+        if (layout instanceof BalloonLayout) {
+            decorationLayer.revalidate();
+        }
+    }
 
     @Override
     public void onMove(N n, Widget widget) {

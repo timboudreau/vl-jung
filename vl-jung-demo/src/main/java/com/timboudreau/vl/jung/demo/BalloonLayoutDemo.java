@@ -26,7 +26,7 @@
 package com.timboudreau.vl.jung.demo;
 
 import edu.uci.ics.jung.graph.Forest;
-import org.apache.commons.collections15.Factory;
+import java.util.function.Supplier;
 
 /**
  * Demonstrates the visualization of a Tree using TreeLayout and BalloonLayout.
@@ -40,69 +40,69 @@ public class BalloonLayoutDemo {
 
     // Code borrowed from JUNG's demos
 
-    Factory<String> edgeFactory = new Factory<String>() {
+    Supplier<String> edgeFactory = new Supplier<String>() {
         int i = 0;
-        public String create() {
+        public String get() {
             return Integer.toString(i++);
         }
     };
 
     Forest<String, String> createTree(Forest<String, String> graph) {
         String base = "Base Node";
-        graph.addEdge(edgeFactory.create(), base, "B0");
-        graph.addEdge(edgeFactory.create(), base, "B1");
-        graph.addEdge(edgeFactory.create(), base, "B2");
+        graph.addEdge(edgeFactory.get(), base, "B0");
+        graph.addEdge(edgeFactory.get(), base, "B1");
+        graph.addEdge(edgeFactory.get(), base, "B2");
 
-        graph.addEdge(edgeFactory.create(), "B0", "C0");
-        graph.addEdge(edgeFactory.create(), "B0", "C1");
-        graph.addEdge(edgeFactory.create(), "B0", "C2");
-        graph.addEdge(edgeFactory.create(), "B0", "C3");
+        graph.addEdge(edgeFactory.get(), "B0", "C0");
+        graph.addEdge(edgeFactory.get(), "B0", "C1");
+        graph.addEdge(edgeFactory.get(), "B0", "C2");
+        graph.addEdge(edgeFactory.get(), "B0", "C3");
 
-        graph.addEdge(edgeFactory.create(), "C2", "H0");
-        graph.addEdge(edgeFactory.create(), "C2", "H1");
+        graph.addEdge(edgeFactory.get(), "C2", "H0");
+        graph.addEdge(edgeFactory.get(), "C2", "H1");
 
-        graph.addEdge(edgeFactory.create(), "B1", "D0");
-        graph.addEdge(edgeFactory.create(), "B1", "D1");
-        graph.addEdge(edgeFactory.create(), "B1", "D2");
+        graph.addEdge(edgeFactory.get(), "B1", "D0");
+        graph.addEdge(edgeFactory.get(), "B1", "D1");
+        graph.addEdge(edgeFactory.get(), "B1", "D2");
 
-        graph.addEdge(edgeFactory.create(), "B2", "E0");
-        graph.addEdge(edgeFactory.create(), "B2", "E1");
-        graph.addEdge(edgeFactory.create(), "B2", "E2");
+        graph.addEdge(edgeFactory.get(), "B2", "E0");
+        graph.addEdge(edgeFactory.get(), "B2", "E1");
+        graph.addEdge(edgeFactory.get(), "B2", "E2");
 
-        graph.addEdge(edgeFactory.create(), "D0", "F0");
-        graph.addEdge(edgeFactory.create(), "D0", "F1");
-        graph.addEdge(edgeFactory.create(), "D0", "F2");
+        graph.addEdge(edgeFactory.get(), "D0", "F0");
+        graph.addEdge(edgeFactory.get(), "D0", "F1");
+        graph.addEdge(edgeFactory.get(), "D0", "F2");
 
-        graph.addEdge(edgeFactory.create(), "D1", "G0");
-        graph.addEdge(edgeFactory.create(), "D1", "G1");
-        graph.addEdge(edgeFactory.create(), "D1", "G2");
-        graph.addEdge(edgeFactory.create(), "D1", "G3");
-        graph.addEdge(edgeFactory.create(), "D1", "G4");
-        graph.addEdge(edgeFactory.create(), "D1", "G5");
-        graph.addEdge(edgeFactory.create(), "D1", "G6");
-        graph.addEdge(edgeFactory.create(), "D1", "G7");
+        graph.addEdge(edgeFactory.get(), "D1", "G0");
+        graph.addEdge(edgeFactory.get(), "D1", "G1");
+        graph.addEdge(edgeFactory.get(), "D1", "G2");
+        graph.addEdge(edgeFactory.get(), "D1", "G3");
+        graph.addEdge(edgeFactory.get(), "D1", "G4");
+        graph.addEdge(edgeFactory.get(), "D1", "G5");
+        graph.addEdge(edgeFactory.get(), "D1", "G6");
+        graph.addEdge(edgeFactory.get(), "D1", "G7");
 
-        graph.addEdge(edgeFactory.create(), base, "HA1");
-        graph.addEdge(edgeFactory.create(), base, "HA2");
-        graph.addEdge(edgeFactory.create(), base, "HA3");
-       	graph.addEdge(edgeFactory.create(), "HA3", "I1");
-       	graph.addEdge(edgeFactory.create(), "HA3", "I2");
+        graph.addEdge(edgeFactory.get(), base, "HA1");
+        graph.addEdge(edgeFactory.get(), base, "HA2");
+        graph.addEdge(edgeFactory.get(), base, "HA3");
+       	graph.addEdge(edgeFactory.get(), "HA3", "I1");
+       	graph.addEdge(edgeFactory.get(), "HA3", "I2");
         
-       	graph.addEdge(edgeFactory.create(), "I2", "J1");
-       	graph.addEdge(edgeFactory.create(), "K0", "K1");
-       	graph.addEdge(edgeFactory.create(), "K0", "K2");
-       	graph.addEdge(edgeFactory.create(), "K0", "K3");
+       	graph.addEdge(edgeFactory.get(), "I2", "J1");
+       	graph.addEdge(edgeFactory.get(), "K0", "K1");
+       	graph.addEdge(edgeFactory.get(), "K0", "K2");
+       	graph.addEdge(edgeFactory.get(), "K0", "K3");
        	
-    	graph.addEdge(edgeFactory.create(), "J0", "J1");
-    	graph.addEdge(edgeFactory.create(), "J0", "J2");
-    	graph.addEdge(edgeFactory.create(), "J1", "J4");
-    	graph.addEdge(edgeFactory.create(), "J2", "J3");
+    	graph.addEdge(edgeFactory.get(), "J0", "J1");
+    	graph.addEdge(edgeFactory.get(), "J0", "J2");
+    	graph.addEdge(edgeFactory.get(), "J1", "J4");
+    	graph.addEdge(edgeFactory.get(), "J2", "J3");
         
-    	graph.addEdge(edgeFactory.create(), "J2", "J5");
-    	graph.addEdge(edgeFactory.create(), "J4", "J6");
-    	graph.addEdge(edgeFactory.create(), "J4", "J7");
-    	graph.addEdge(edgeFactory.create(), "J3", "J8");
-    	graph.addEdge(edgeFactory.create(), "J6", "B9");
+    	graph.addEdge(edgeFactory.get(), "J2", "J5");
+    	graph.addEdge(edgeFactory.get(), "J4", "J6");
+    	graph.addEdge(edgeFactory.get(), "J4", "J7");
+    	graph.addEdge(edgeFactory.get(), "J3", "J8");
+    	graph.addEdge(edgeFactory.get(), "J6", "B9");
         return graph;
     }
 }

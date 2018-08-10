@@ -30,7 +30,6 @@ import com.timboudreau.vl.jung.ObjectSceneAdapter;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
 import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.graph.ObservableGraph;
-import edu.uci.ics.jung.graph.util.Pair;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.EventQueue;
@@ -65,7 +64,7 @@ class SceneImpl extends BaseJungScene<String, String> {
         DemoWidget<String, String> w = new DemoWidget<String, String>(this, node);
         w.setLabel(node);
         w.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        w.getActions().addAction(new MultiMoveAction(relatedProvider(), moveProvider()));
+        w.getActions().addAction(new MultiMoveAction(relatedProvider(), createMoveProvider()));
         return w;
     }
     
