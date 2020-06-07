@@ -26,25 +26,34 @@
 package com.timboudreau.vl.jung.demo;
 
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
-import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
-import edu.uci.ics.jung.algorithms.layout.CircleLayout;
-import edu.uci.ics.jung.algorithms.layout.DAGLayout;
-import edu.uci.ics.jung.algorithms.layout.FRLayout;
-import edu.uci.ics.jung.algorithms.layout.FRLayout2;
-import edu.uci.ics.jung.algorithms.layout.ISOMLayout;
-import edu.uci.ics.jung.algorithms.layout.KKLayout;
-import edu.uci.ics.jung.algorithms.layout.Layout;
-import edu.uci.ics.jung.algorithms.layout.RadialTreeLayout;
-import edu.uci.ics.jung.algorithms.layout.SpringLayout;
-import edu.uci.ics.jung.algorithms.layout.SpringLayout2;
-import edu.uci.ics.jung.algorithms.layout.TreeLayout;
-import edu.uci.ics.jung.graph.DelegateForest;
-import edu.uci.ics.jung.graph.Forest;
-import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.ObservableGraph;
-import edu.uci.ics.jung.graph.UndirectedOrderedSparseMultigraph;
-import edu.uci.ics.jung.graph.util.Context;
-import edu.uci.ics.jung.visualization.decorators.EdgeShape;
+import org.jgrapht.Graph;
+import org.jgrapht.ListenableGraph;
+import org.jgrapht.graph.DefaultListenableGraph;
+import org.jgrapht.graph.builder.GraphTypeBuilder;
+import org.jungrapht.visualization.decorators.EdgeShape;
+import org.jungrapht.visualization.layout.algorithms.BalloonLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.CircleLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.DAGLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.FRLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.ISOMLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.KKLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.RadialTreeLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.SpringLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.TreeLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.repulsion.BarnesHutFRRepulsion;
+import org.jungrapht.visualization.layout.algorithms.repulsion.BarnesHutSpringRepulsion;
+import org.jungrapht.visualization.layout.model.DefaultLayoutModel;
+import org.jungrapht.visualization.layout.model.LayoutModel;
+import org.jungrapht.visualization.util.Context;
+import org.openide.util.Exceptions;
+import org.openide.util.Lookup;
+import org.openide.util.LookupEvent;
+import org.openide.util.LookupListener;
+
+import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -68,30 +77,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JToolBar;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
-import javax.swing.WindowConstants;
-import javax.swing.border.BevelBorder;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import org.apache.commons.collections15.Transformer;
-import org.openide.util.Exceptions;
-import org.openide.util.Lookup;
-import org.openide.util.LookupEvent;
-import org.openide.util.LookupListener;
 
 public class App {
 
@@ -100,10 +88,10 @@ public class App {
 
     private static class GraphAndForest {
 
-        private final ObservableGraph<String, String> graph;
-        private final Forest<String, String> forest;
+        private final ListenableGraph<String, String> graph;
+        private final Graph<String, String> forest;
 
-        public GraphAndForest(ObservableGraph<String, String> graph, Forest<String, String> forest) {
+        public GraphAndForest(ListenableGraph<String, String> graph, Graph<String, String> forest) {
             this.graph = graph;
             this.forest = forest;
         }
@@ -120,11 +108,12 @@ public class App {
         jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         GraphAndForest gf = loadGraph(args);
 
-        Layout layout;
+        LayoutAlgorithm<String> layout;
+
         try {
-            layout = gf.forest == null ? new KKLayout(gf.graph) : new TreeLayout(gf.forest, 70, 70);
+            layout = gf.forest == null ? new KKLayoutAlgorithm<>() : new TreeLayoutAlgorithm<>();
         } catch (IllegalArgumentException ex) {
-            layout = new KKLayout(gf.graph);
+            layout = new KKLayoutAlgorithm<>();
         }
         final BaseJungScene scene = new SceneImpl(gf.graph, layout);
         jf.setLayout(new BorderLayout());
@@ -133,27 +122,27 @@ public class App {
         JToolBar bar = new JToolBar();
         bar.setMargin(new Insets(5, 5, 5, 5));
         bar.setLayout(new FlowLayout(5));
-        DefaultComboBoxModel<Layout> mdl = new DefaultComboBoxModel<>();
-        mdl.addElement(new KKLayout(gf.graph));
+        DefaultComboBoxModel<LayoutAlgorithm> mdl = new DefaultComboBoxModel<>();
+        mdl.addElement(new KKLayoutAlgorithm());
         mdl.addElement(layout);
         if (gf.forest != null) {
-            mdl.addElement(new BalloonLayout(gf.forest));
-            mdl.addElement(new RadialTreeLayout(gf.forest));
+            mdl.addElement(new BalloonLayoutAlgorithm());
+            mdl.addElement(new RadialTreeLayoutAlgorithm());
         }
-        mdl.addElement(new CircleLayout(gf.graph));
-        mdl.addElement(new FRLayout(gf.graph));
-        mdl.addElement(new FRLayout2(gf.graph));
-        mdl.addElement(new ISOMLayout(gf.graph));
-        mdl.addElement(new SpringLayout(gf.graph));
-        mdl.addElement(new SpringLayout2(gf.graph));
-        mdl.addElement(new DAGLayout(gf.graph));
+        mdl.addElement(new CircleLayoutAlgorithm());
+        mdl.addElement(FRLayoutAlgorithm.builder().repulsionContractBuilder(BarnesHutFRRepulsion.barnesHutBuilder()).build());
+//        mdl.addElement(new FRLayout2(gf.graph));
+        mdl.addElement(new ISOMLayoutAlgorithm());
+        mdl.addElement(SpringLayoutAlgorithm.builder().repulsionContractBuilder(BarnesHutSpringRepulsion.barnesHutBuilder()).build());
+//        mdl.addElement(new SpringLayout2(gf.graph));
+        mdl.addElement(new DAGLayoutAlgorithm());
 //        mdl.addElement(new XLayout(g));
         mdl.setSelectedItem(layout);
         final JCheckBox checkbox = new JCheckBox("Animate iterative layouts");
 
         scene.setLayoutAnimationFramesPerSecond(48);
 
-        final JComboBox<Layout> layouts = new JComboBox(mdl);
+        final JComboBox<LayoutAlgorithm> layouts = new JComboBox(mdl);
         layouts.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> jlist, Object o, int i, boolean bln, boolean bln1) {
@@ -166,11 +155,11 @@ public class App {
         layouts.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
-                Layout layout = (Layout) layouts.getSelectedItem();
+                LayoutAlgorithm layout = (LayoutAlgorithm) layouts.getSelectedItem();
                 // These two layouts implement IterativeContext, but they do
                 // not evolve toward anything, they just randomly rearrange
                 // themselves.  So disable animation for these.
-                if (layout instanceof ISOMLayout || layout instanceof DAGLayout) {
+                if (layout instanceof ISOMLayoutAlgorithm || layout instanceof DAGLayoutAlgorithm) {
                     checkbox.setSelected(false);
                 }
                 scene.setGraphLayout(layout, true);
@@ -178,21 +167,22 @@ public class App {
         });
 
         bar.add(new JLabel(" Connection Shape"));
-        DefaultComboBoxModel<Transformer<Context<Graph<String, String>, String>, Shape>> shapes = new DefaultComboBoxModel<>();
+        DefaultComboBoxModel<Function<Context<Graph<String, String>, String>, Shape>> shapes = new DefaultComboBoxModel<>();
         shapes.addElement(new EdgeShape.QuadCurve<String, String>());
-        shapes.addElement(new EdgeShape.BentLine<String, String>());
+//        shapes.addElement(new EdgeShape.BentLine<String, String>());
         shapes.addElement(new EdgeShape.CubicCurve<String, String>());
         shapes.addElement(new EdgeShape.Line<String, String>());
         shapes.addElement(new EdgeShape.Box<String, String>());
-        shapes.addElement(new EdgeShape.Orthogonal<String, String>());
-        shapes.addElement(new EdgeShape.Wedge<String, String>(10));
+//        shapes.addElement(new EdgeShape.Orthogonal<String, String>());
+//        shapes.addElement(new EdgeShape.Wedge<String, String>(10));
 
-        final JComboBox<Transformer<Context<Graph<String, String>, String>, Shape>> shapesBox = new JComboBox<>(shapes);
+        final JComboBox<Function<Context<Graph<String, String>, String>, Shape>> shapesBox = new JComboBox<>(shapes);
         shapesBox.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent ae) {
-                Transformer<Context<Graph<String, String>, String>, Shape> xform = (Transformer<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
+                Function<Context<Graph<String, String>, String>, Shape> xform =
+                        (Function<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
                 scene.setConnectionEdgeShape(xform);
             }
         });
@@ -303,7 +293,8 @@ public class App {
                 System.exit(1);
             }
             try {
-                Forest<String, String> forest = new DelegateForest<>();
+                Graph<String, String> forest = GraphTypeBuilder.<String,String>directed()
+                        .buildGraph();
                 String[] arr = new String[2];
                 Set<String> pairs = new HashSet<>();
                 try (BufferedReader br = new BufferedReader(new FileReader(f))) {
@@ -320,7 +311,7 @@ public class App {
                             String key = x[0] + "::" + x[1];
                             if (!pairs.contains(key)) {
                                 String edge = Integer.toString(ix);
-                                forest.addEdge(edge, items[0], items[1]);
+                                forest.addEdge(items[0], items[1], edge);
                                 pairs.add(key);
                             } else {
                                 System.out.println("DUP: " + key);
@@ -329,12 +320,15 @@ public class App {
                         ix++;
                     }
                 }
-                ObservableGraph<String, String> g = new ObservableGraph<>(forest);
+                ListenableGraph<String, String> g = new DefaultListenableGraph<>(forest);
                 return new GraphAndForest(g, forest);
             } catch (Exception e) {
                 // Graph has cycles - try undirected
                 e.printStackTrace();
-                UndirectedOrderedSparseMultigraph<String, String> graph = new UndirectedOrderedSparseMultigraph<String, String>();
+                Graph<String, String> graph = GraphTypeBuilder.<String,String>undirected()
+                        .allowingSelfLoops(true)
+                        .allowingMultipleEdges(true).buildGraph();
+//                        new UndirectedOrderedSparseMultigraph<String, String>();
                 String[] arr = new String[2];
                 Set<String> pairs = new HashSet<>();
                 try (BufferedReader br = new BufferedReader(new FileReader(f))) {
@@ -352,7 +346,7 @@ public class App {
                                 Arrays.sort(x);
                                 String key = x[0] + "::" + x[1];
                                 if (!pairs.contains(key)) {
-                                    graph.addEdge(edge, items[0], items[1]);
+                                    graph.addEdge(items[0], items[1], edge);
                                     pairs.add(key);
                                 } else {
                                     System.out.println("DUP: " + key);
@@ -364,12 +358,15 @@ public class App {
                         ix++;
                     }
                 }
-                ObservableGraph<String, String> g = new ObservableGraph<>(graph);
+                ListenableGraph<String, String> g = (ListenableGraph<String,String>)graph;
                 return new GraphAndForest(g, null);
             }
         } else {
-            Forest<String, String> forest = new DelegateForest<>();
-            ObservableGraph<String, String> g = new ObservableGraph(new BalloonLayoutDemo().createTree(forest));
+            Graph<String, String> forest = GraphTypeBuilder.<String,String>directed()
+                    .edgeSupplier(BalloonLayoutDemo.edgeFactory).buildGraph();
+
+//                    new DelegateForest<>();
+            ListenableGraph<String, String> g = new DefaultListenableGraph(new BalloonLayoutDemo().createTree(forest));
             return new GraphAndForest(g, forest);
         }
     }

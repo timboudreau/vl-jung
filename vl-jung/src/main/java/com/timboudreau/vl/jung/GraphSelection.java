@@ -25,8 +25,8 @@
  */
 package com.timboudreau.vl.jung;
 
-import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.util.Pair;
+import org.jgrapht.Graph;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -51,11 +51,13 @@ public final class GraphSelection<N, E> {
 
     public boolean isIndirectlyConnectedToSelection(N node) {
         Set<?> selected = scene.getSelectedObjects();
-        for (E e : scene.graph.getInEdges(node)) {
-            N opposite = scene.graph.getOpposite(node, e);
-            for (E e1 : scene.graph.getInEdges(opposite)) {
+        for (E e : scene.graph.incomingEdgesOf(node)) {
+            N opposite = scene.graph.getEdgeSource(e);
+//                    getOpposite(node, e);
+            for (E e1 : scene.graph.incomingEdgesOf(opposite)) {
                 if (e1 != e) {
-                    N opposite2 = scene.graph.getOpposite(opposite, e1);
+                    N opposite2 = scene.graph.getEdgeSource(e);
+//                            .getOpposite(opposite, e1);
                     if (selected.contains(opposite2)) {
                         return true;
                     }
@@ -66,14 +68,14 @@ public final class GraphSelection<N, E> {
     }
 
     public boolean isConnectedToSelection(N node) {
-        Set<N> nodes = new HashSet<>(scene.graph.getVertices());
+        Set<N> nodes = new HashSet<>(scene.graph.vertexSet());
         nodes.retainAll(scene.getSelectedObjects());
         if (nodes.contains(node)) {
             return false;
         }
         for (N n : nodes) {
-            for (E edge : scene.graph.getOutEdges(n)) {
-                if (scene.graph.getEndpoints(edge).contains(node)) {
+            for (E edge : scene.graph.outgoingEdgesOf(n)) {
+                if (scene.graph.getEdgeTarget(edge).equals(node)) {
                     return true;
                 }
             }
@@ -82,7 +84,7 @@ public final class GraphSelection<N, E> {
     }
 
     public Set<N> getSelection() {
-        Set<N> nodes = new HashSet<>(scene.graph.getVertices());
+        Set<N> nodes = new HashSet<>(scene.graph.vertexSet());
         nodes.retainAll(scene.getSelectedObjects());
         return nodes;
     }
@@ -97,12 +99,14 @@ public final class GraphSelection<N, E> {
         Set<E> edges = getEdgesTouchingSelection(et);
         Set<N> result = new HashSet<>();
         for (E e : edges) {
-            Pair<N> p = scene.graph.getEndpoints(e);
-            if (!sel.contains(p.getFirst())) {
-                result.add(p.getFirst());
+            N source = scene.graph.getEdgeSource(e);
+            N target = scene.graph.getEdgeTarget(e);
+//            Pair<N> p = scene.graph.getEndpoints(e);
+            if (!sel.contains(source)) {
+                result.add(source);
             }
-            if (!sel.contains(p.getSecond())) {
-                result.add(p.getSecond());
+            if (!sel.contains(target)) {
+                result.add(target);
             }
         }
         return result;
@@ -114,10 +118,10 @@ public final class GraphSelection<N, E> {
         Graph<N,E> gp = scene.graph;
         for (N n : getSelection()) {
             if (tps.contains(EdgeTypes.IN)) {
-                result.addAll(gp.getInEdges(n));
+                result.addAll(gp.incomingEdgesOf(n));
             }
             if (tps.contains(EdgeTypes.OUT)) {
-                result.addAll(gp.getOutEdges(n));
+                result.addAll(gp.outgoingEdgesOf(n));
             }
         }
         return result;
@@ -125,7 +129,8 @@ public final class GraphSelection<N, E> {
 
     public boolean isAttachedToSelection(E edge) {
         Set<N> nodes = getSelection();
-        nodes.retainAll(scene.graph.getEndpoints(edge));
-        return !nodes.isEmpty();
+        return nodes.contains(scene.graph.getEdgeSource(edge)) || nodes.contains(scene.graph.getEdgeTarget(edge));
+//        nodes.retainAll(scene.graph.getEndpoints(edge));
+//        return !nodes.isEmpty();
     }
 }

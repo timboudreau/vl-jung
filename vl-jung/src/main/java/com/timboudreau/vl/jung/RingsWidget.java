@@ -25,8 +25,6 @@
  */
 package com.timboudreau.vl.jung;
 
-import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
-import edu.uci.ics.jung.algorithms.layout.Layout;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -36,6 +34,11 @@ import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
+
+import org.jungrapht.visualization.layout.algorithms.BalloonLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
+import org.jungrapht.visualization.layout.model.LayoutModel;
+import org.jungrapht.visualization.layout.model.Point;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
@@ -62,22 +65,23 @@ public final class RingsWidget<N, E> extends Widget {
     @Override
     public void paintWidget() {
         JungScene<N, E> scene = (JungScene<N, E>) getScene();
-        Layout<N, E> l = scene.layout;
-        if (l instanceof BalloonLayout) {
-            BalloonLayout<N, E> layout = (BalloonLayout<N, E>) l;
+        LayoutAlgorithm<N> l = scene.layoutAlgorithm;
+        LayoutModel<N> layoutModel = scene.layoutModel;
+        if (l instanceof BalloonLayoutAlgorithm) {
+            BalloonLayoutAlgorithm<N> layoutAlgorithm = (BalloonLayoutAlgorithm<N>) l;
 
             Graphics2D g2d = getGraphics();
             g2d.setColor(getForeground());
 
             Ellipse2D ellipse = new Ellipse2D.Double();
-            for (N v : layout.getGraph().getVertices()) {
-                Double radius = layout.getRadii().get(v);
+            for (N v : layoutModel.getGraph().vertexSet()) {
+                Double radius = layoutAlgorithm.getRadii().get(v);
                 if (radius == null) {
                     continue;
                 }
-                Point2D p = layout.transform(v);
+                Point p = layoutModel.apply(v);
                 ellipse.setFrame(-radius, -radius, 2 * radius, 2 * radius);
-                AffineTransform at = AffineTransform.getTranslateInstance(p.getX(), p.getY());
+                AffineTransform at = AffineTransform.getTranslateInstance(p.x, p.y);
                 // Transform it to the center of the widget
 //                Widget w = scene.findWidget(v);
 //                if (w != null) {
@@ -97,18 +101,19 @@ public final class RingsWidget<N, E> extends Widget {
     protected Rectangle calculateClientArea() {
         Rectangle result = new Rectangle();
         JungScene<N, E> scene = (JungScene<N, E>) getScene();
-        Layout<N, E> l = scene.layout;
-        if (l instanceof BalloonLayout) {
-            BalloonLayout<N, E> layout = (BalloonLayout<N, E>) l;
+        LayoutAlgorithm<N> l = scene.layoutAlgorithm;
+        LayoutModel<N> layoutModel = scene.layoutModel;
+        if (l instanceof BalloonLayoutAlgorithm) {
+            BalloonLayoutAlgorithm<N> layout = (BalloonLayoutAlgorithm<N>) l;
             Ellipse2D ellipse = new Ellipse2D.Double();
-            for (N v : layout.getGraph().getVertices()) {
+            for (N v : layoutModel.getGraph().vertexSet()) {
                 Double radius = layout.getRadii().get(v);
                 if (radius == null) {
                     continue;
                 }
-                Point2D p = layout.transform(v);
+                Point p = layoutModel.apply(v);
                 ellipse.setFrame(-radius, -radius, 2 * radius, 2 * radius);
-                AffineTransform at = AffineTransform.getTranslateInstance(p.getX(), p.getY());
+                AffineTransform at = AffineTransform.getTranslateInstance(p.x, p.y);
 
                 // Transform it to the center of the widget
 //                Widget w = scene.findWidget(v);

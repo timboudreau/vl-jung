@@ -28,27 +28,23 @@ package com.timboudreau.vl.jung.demo;
 import com.timboudreau.vl.jung.MultiMoveAction;
 import com.timboudreau.vl.jung.ObjectSceneAdapter;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
-import edu.uci.ics.jung.algorithms.layout.Layout;
-import edu.uci.ics.jung.graph.ObservableGraph;
-import edu.uci.ics.jung.graph.util.Pair;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.EventQueue;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import org.jgrapht.Graph;
+import org.jgrapht.ListenableGraph;
+import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
+import org.jungrapht.visualization.layout.model.LayoutModel;
 import org.netbeans.api.visual.model.ObjectSceneEvent;
 import org.netbeans.api.visual.model.ObjectSceneEventType;
 import org.netbeans.api.visual.widget.LabelWidget;
 import org.netbeans.api.visual.widget.LayerWidget;
 import org.netbeans.api.visual.widget.Widget;
 import org.openide.util.RequestProcessor;
+
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.EventQueue;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.io.IOException;
 
 /**
  *
@@ -59,8 +55,8 @@ class SceneImpl extends BaseJungScene<String, String> {
     private final LayerWidget edgeTooltipLayer = new LayerWidget(this);
     private final LabelWidget label = new LabelWidget(this);
 
-    public SceneImpl(ObservableGraph<String, String> graph, Layout layout) throws IOException {
-        super(graph, layout);
+    public SceneImpl(ListenableGraph<String, String> graph, LayoutAlgorithm<String> layoutAlgorithm) throws IOException {
+        super(graph, layoutAlgorithm);
         addChild(edgeTooltipLayer);
         edgeTooltipLayer.addChild(label);
         addObjectSceneListener(new HoverListener(), ObjectSceneEventType.OBJECT_HOVER_CHANGED);
@@ -86,7 +82,7 @@ class SceneImpl extends BaseJungScene<String, String> {
             if (!EventQueue.isDispatchThread()) {
                 EventQueue.invokeLater(this);
             } else if (widget != null && hover != null) {
-                Pair<String> endpoints = graph().getEndpoints(hover);
+//                Pair<String> endpoints = graph().getEndpoints(hover);
 //                String lbl = "EDGE " + hover + " (" + endpoints.getFirst() + " -> " + endpoints.getSecond() + ")";
                 Rectangle r = widget.getClientArea();
                 Point p = new Point((int) r.getCenterX(), (int) r.getCenterY());

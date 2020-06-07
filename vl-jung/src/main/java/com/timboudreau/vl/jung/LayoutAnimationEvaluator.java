@@ -1,6 +1,7 @@
 package com.timboudreau.vl.jung;
 
-import edu.uci.ics.jung.algorithms.layout.Layout;
+
+import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
 
 /**
  * Many JUNG layouts never <i>quite</i> settle into a stable state, but leave
@@ -49,7 +50,7 @@ public class LayoutAnimationEvaluator {
      */
     public static LayoutAnimationEvaluator NO_OP = new LayoutAnimationEvaluator() {
         @Override
-        protected boolean animationIsFinished(double min, double max, double average, Layout<?, ?> layout) {
+        protected boolean animationIsFinished(double min, double max, double average, LayoutAlgorithm<?> layoutAlgorithm) {
             return false;
         }
     };
@@ -119,11 +120,11 @@ public class LayoutAnimationEvaluator {
      * @param min The minimum distance any point moved
      * @param max The maximum distance any point moved
      * @param average The average distance points moved
-     * @param layout The JUNG layout - may want to special case layouts with
+     * @param layoutAlgorithm The JUNG layout - may want to special case layouts with
      * different characteristics
      * @return True if no significant moves have occurred
      */
-    protected boolean test (double min, double max, double average, Layout<?,?> layout) {
+    protected boolean test (double min, double max, double average, LayoutAlgorithm<?> layoutAlgorithm) {
         return max <= getDistanceConsideredStable();
     }
     
@@ -145,17 +146,17 @@ public class LayoutAnimationEvaluator {
      * @param min The minimum distance any point moved
      * @param max The maximum distance any point moved
      * @param average The average distance points moved
-     * @param layout The layout being used. Some JUNG layouts never settle but
+     * @param layoutAlgorithm The layout being used. Some JUNG layouts never settle but
      * repeatedly produce large moves;  this parameter can be used to evaluate if
      * this is such a case
      * @return True if no significant moves have occurred
      */
-    protected boolean animationIsFinished(double min, double max, double average, Layout<?,?> layout) {
+    protected boolean animationIsFinished(double min, double max, double average, LayoutAlgorithm<?> layoutAlgorithm) {
         if (callCount++ < minIterations) {
             return false;
         }
 //        System.out.println(min + " <-> " + max + "  ::  " + average);
-        boolean result = test(min, max, average, layout);
+        boolean result = test(min, max, average, layoutAlgorithm);
         if (!result) {
             reset();
         } else {

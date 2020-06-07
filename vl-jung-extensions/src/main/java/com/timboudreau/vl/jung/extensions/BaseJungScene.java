@@ -34,9 +34,6 @@ import static com.timboudreau.vl.jung.extensions.States.HOVERED;
 import static com.timboudreau.vl.jung.extensions.States.INDIRECTLY_CONNECTED_TO_SELECTION;
 import static com.timboudreau.vl.jung.extensions.States.SELECTED;
 import static com.timboudreau.vl.jung.extensions.States.UNRELATED_TO_SELECTION;
-import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
-import edu.uci.ics.jung.algorithms.layout.Layout;
-import edu.uci.ics.jung.graph.ObservableGraph;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.io.IOException;
@@ -44,6 +41,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import javax.swing.JComponent;
+
+import org.jgrapht.Graph;
+import org.jungrapht.visualization.layout.algorithms.BalloonLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
+import org.jungrapht.visualization.layout.model.LayoutModel;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.WidgetAction;
 import org.netbeans.api.visual.anchor.Anchor;
@@ -77,8 +79,8 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     private WidgetAction edgeClickSelect;
     private Dimension lastSize = new Dimension();
 
-    public BaseJungScene(ObservableGraph<N, E> graph, Layout layout) throws IOException {
-        super(graph, layout);
+    public BaseJungScene(Graph<N, E> graph, LayoutAlgorithm<N> layoutAlgorithm) throws IOException {
+        super(graph, layoutAlgorithm);
         colors = createColors();
         // Selection layer is behind everything
         addChild(selectionLayer);
@@ -123,7 +125,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
             try {
                 Dimension size = vw.getSize();
                 if (!lastSize.equals(size)) {
-                    layout.setSize(size);
+                    layoutModel.setSize(size.width, size.height);
                 }
             } catch (UnsupportedOperationException e) {
                 // not supported by some graph layouts, and they tell us
@@ -183,7 +185,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     @Override
     public void onMove(N n, Widget widget) {
         connectionLayer.repaint();
-        if (layout instanceof BalloonLayout) {
+        if (layoutAlgorithm instanceof BalloonLayoutAlgorithm) {
             decorationLayer.revalidate();
         }
     }
@@ -442,12 +444,12 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
             Set<N> connectedNodes = new HashSet<>();
             for (Object o : newlySelected) {
                 N n = (N) o;
-                Collection<E> edges = graph.getOutEdges(n);
+                Collection<E> edges = graph.outgoingEdgesOf(n);
                 if (edges != null) {
-                    for (E edge : graph.getOutEdges(n)) {
+                    for (E edge : graph.outgoingEdgesOf(n)) {
                         closeEdges.add(edge);
                         otherEdges.remove(edge);
-                        N opp = graph.getOpposite(n, edge);
+                        N opp = graph.getEdgeTarget(edge);
                         remainingNodes.remove(opp);
                         connectedNodes.add(opp);
                         if (!newlySelected.contains(opp)) {
@@ -458,12 +460,12 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
                 }
             }
             for (N n : connectedNodes) {
-                Collection<E> edges = graph.getInEdges(n);
+                Collection<E> edges = graph.incomingEdgesOf(n);
                 if (edges != null) {
-                    for (E edge : graph.getOutEdges(n)) {
+                    for (E edge : graph.outgoingEdgesOf(n)) {
                         closeEdges.add(edge);
                         otherEdges.remove(edge);
-                        N opp = graph.getOpposite(n, edge);
+                        N opp = graph.getEdgeTarget(edge);
                         remainingNodes.remove(opp);
                         if (!newSelection.contains(opp) && !connectedNodes.contains(opp)) {
                             Widget w = findWidget(opp);
@@ -494,7 +496,10 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
         @Override
         public WidgetAction.State mouseClicked(Widget widget, WidgetAction.WidgetMouseEvent event) {
             E edge = (E) findObject(widget);
-            HashSet<N> nue = new HashSet<>(graph.getEndpoints(edge));
+            HashSet<N> nue = new HashSet<>();
+            nue.add(graph.getEdgeSource(edge));
+            nue.add(graph.getEdgeTarget(edge));
+//                    graph.getEndpoints(edge));
             Set<Object> selection = new HashSet<>(getSelectedObjects());
             if (selection.isEmpty() || !event.isShiftDown()) {
                 setSelectedObjects(nue);

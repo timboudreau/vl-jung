@@ -25,11 +25,6 @@
  */
 package com.timboudreau.vl.jung;
 
-import edu.uci.ics.jung.algorithms.layout.Layout;
-import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.util.Context;
-import edu.uci.ics.jung.graph.util.Pair;
-import edu.uci.ics.jung.visualization.decorators.EdgeShape;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -39,7 +34,12 @@ import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
-import org.apache.commons.collections15.Transformer;
+import java.util.function.Function;
+
+import org.jgrapht.Graph;
+import org.jungrapht.visualization.decorators.EdgeShape;
+import org.jungrapht.visualization.layout.model.LayoutModel;
+import org.jungrapht.visualization.util.Context;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
@@ -51,7 +51,7 @@ import org.netbeans.api.visual.widget.Widget;
 public class JungConnectionWidget<V, E> extends Widget {
     private Stroke stroke = new BasicStroke(2);
     private final E edge;
-    private Transformer<Context<Graph<V, E>, E>, Shape> transformer;
+    private Function<Context<Graph<V, E>, E>, Shape> transformer;
 
     public static <V, E> JungConnectionWidget<V, E> createQuadratic(JungScene<V, E> scene, E edge) {
         return new JungConnectionWidget<>(scene, new EdgeShape.QuadCurve<V, E>(), edge);
@@ -65,8 +65,12 @@ public class JungConnectionWidget<V, E> extends Widget {
         return new JungConnectionWidget<>(scene, new EdgeShape.Orthogonal<V, E>(), edge);
     }
 
-    public static <V, E> JungConnectionWidget<V, E> createBent(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.BentLine<V, E>(), edge);
+//    public static <V, E> JungConnectionWidget<V, E> createBent(JungScene<V, E> scene, E edge) {
+//        return new JungConnectionWidget<>(scene, new EdgeShape.BentLine<V, E>(), edge);
+//    }
+
+    public static <V, E> JungConnectionWidget<V, E> createArticulated(JungScene<V, E> scene, E edge) {
+        return new JungConnectionWidget<>(scene, new EdgeShape.ArticulatedLine<>(), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createLoop(JungScene<V, E> scene, E edge) {
@@ -81,7 +85,7 @@ public class JungConnectionWidget<V, E> extends Widget {
         this(scene, new EdgeShape.QuadCurve<V, E>(), edge);
     }
 
-    public JungConnectionWidget(JungScene<V, E> scene, Transformer<Context<Graph<V, E>, E>, Shape> transformer, E edge) {
+    public JungConnectionWidget(JungScene<V, E> scene, Function<Context<Graph<V, E>, E>, Shape> transformer, E edge) {
         super(scene);
         this.edge = edge;
         this.transformer = transformer;
@@ -89,7 +93,7 @@ public class JungConnectionWidget<V, E> extends Widget {
         setOpaque(false);
     }
 
-    public void setTransformer(Transformer<Context<Graph<V, E>, E>, Shape> transformer) {
+    public void setFunction(Function<Context<Graph<V, E>, E>, Shape> transformer) {
         this.transformer = transformer;
     }
 
@@ -132,18 +136,20 @@ public class JungConnectionWidget<V, E> extends Widget {
         
         Graph<V, E> graph = getGraph();
         Context<Graph<V, E>, E> c = Context.getInstance(graph, edge);
-        Shape edgeShape = transformer.transform(c);
+        Shape edgeShape = transformer.apply(c);
 
-        Pair<V> nodes = graph.getEndpoints(edge);
-        Layout<V, E> layout = scene.layout;
+//        Pair<V> nodes = graph.getEndpoints(edge);
+        V source = graph.getEdgeSource(edge);
+        V target = graph.getEdgeTarget(edge);
+        LayoutModel<V> layoutModel = scene.layoutModel;
 
-        Widget w1 = scene.findWidget(nodes.getFirst());
+        Widget w1 = scene.findWidget(source);
         Rectangle r1 = w1.getClientArea();
-        Widget w2 = scene.findWidget(nodes.getSecond());
+        Widget w2 = scene.findWidget(target);
         Rectangle r2 = w2.getClientArea();
 
-        Point2D firstLoc = layout.transform(nodes.getFirst());
-        Point2D secondLoc = layout.transform(nodes.getSecond());
+        org.jungrapht.visualization.layout.model.Point firstLoc = layoutModel.apply(source);
+        org.jungrapht.visualization.layout.model.Point secondLoc = layoutModel.apply(target);
 //        if (r1 != null) {
 //            r1.x = 0;
 //            r1.y = 0;
@@ -157,12 +163,12 @@ public class JungConnectionWidget<V, E> extends Widget {
 //                    secondLoc.getY() + (double) r2.getCenterY());
 //        }
 
-        float x1 = (float) firstLoc.getX();
-        float y1 = (float) firstLoc.getY();
-        float x2 = (float) secondLoc.getX();
-        float y2 = (float) secondLoc.getY();
+        float x1 = (float) firstLoc.x;
+        float y1 = (float) firstLoc.y;
+        float x2 = (float) secondLoc.x;
+        float y2 = (float) secondLoc.y;
 
-        AffineTransform xform = AffineTransform.getTranslateInstance(firstLoc.getX(), firstLoc.getY());
+        AffineTransform xform = AffineTransform.getTranslateInstance(firstLoc.x, firstLoc.y);
 
         float dx = x2 - x1;
         float dy = y2 - y1;

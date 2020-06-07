@@ -103,7 +103,7 @@ public class DemoWidget<N, E> extends Widget {
         // Get the node
         N node = (N) scene().findObject(this);
         // Grow the shape based on the number of connections
-        int ix = scene().graph().getNeighborCount(node);
+        int ix = scene().graph().degreeOf(node);
         // Minimum size 18 pixels, grow by 3 for each connection
         double w, h;
         w = h = 18 + (ix * 3);

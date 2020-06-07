@@ -25,29 +25,30 @@
  */
 package com.timboudreau.vl.jung;
 
-import edu.uci.ics.jung.algorithms.layout.Layout;
-import edu.uci.ics.jung.algorithms.util.IterativeContext;
-import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.ObservableGraph;
-import edu.uci.ics.jung.graph.event.GraphEvent;
-import edu.uci.ics.jung.graph.event.GraphEventListener;
-import edu.uci.ics.jung.graph.util.Context;
-import edu.uci.ics.jung.graph.util.Pair;
-import java.awt.Point;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JComponent;
 import javax.swing.Timer;
-import org.apache.commons.collections15.Transformer;
+
+import org.jgrapht.Graph;
+import org.jgrapht.ListenableGraph;
+import org.jgrapht.event.GraphEdgeChangeEvent;
+import org.jgrapht.event.GraphListener;
+import org.jgrapht.event.GraphVertexChangeEvent;
+import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.util.IterativeContext;
+import org.jungrapht.visualization.layout.model.LayoutModel;
+import org.jungrapht.visualization.layout.model.Point;
+import org.jungrapht.visualization.util.Context;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.MoveProvider;
 import org.netbeans.api.visual.action.WidgetAction;
@@ -77,7 +78,8 @@ import org.openide.util.lookup.InstanceContent;
 public abstract class JungScene<N, E> extends GraphScene<N, E> {
 
     protected final Graph<N, E> graph;
-    protected Layout<N, E> layout;
+    protected LayoutModel<N> layoutModel;
+    protected LayoutAlgorithm<N> layoutAlgorithm;
     private final LayoutAdapter sceneLayout = new LayoutAdapter();
     private boolean initialized;
     private SelectByClickAction clickAction;
@@ -94,18 +96,20 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * is done using the passed layout.
      *
      * @param graph A JUNG graph which will be used to provide the graph
-     * @param layout A JUNG layout to be used as the initial layout
+     * @param layoutAlgorithm A JUNG layoutAlgorithm to be used as the initial layout
      */
     @SuppressWarnings("unchecked")
-    protected JungScene(Graph<N, E> graph, Layout layout) {
+    protected JungScene(Graph<N, E> graph, LayoutAlgorithm<N> layoutAlgorithm) {
         this.graph = graph;
-        this.layout = layout;
+        this.layoutModel = LayoutModel.<N>builder().graph(graph).width(600).height(600).build();
+        this.layoutAlgorithm = layoutAlgorithm;
         timer.setRepeats(true);
         timer.setCoalesce(true);
         timer.setInitialDelay(200);
         timer.stop();
-        if (graph instanceof ObservableGraph<?, ?>) {
-            ((ObservableGraph<N, E>) graph).addGraphEventListener(new GraphEventAdapter());
+
+        if (graph instanceof ListenableGraph<?, ?>) {
+            ((ListenableGraph<N, E>) graph).addGraphListener(new GraphEventAdapter());
         }
         final InstanceContent content = new InstanceContent();
         lkp = new AbstractLookup(content);
@@ -179,7 +183,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             Collection<E> edges = findNodeEdges(model, true, false);
             Set<N> found = new HashSet<>();
             for (E n : edges) {
-                found.add(graph.getDest(n));
+                found.add(graph.getEdgeTarget(n));
             }
             if (depth > 0) {
                 for (N f : found) {
@@ -202,13 +206,23 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     }
 
     /**
-     * Gets the JUNG layout
+     * Gets the JUNG layoutModel
      *
      * @return
      */
-    public final Layout layout() {
-        return layout;
+    public final LayoutModel<N> layoutModel() {
+        return layoutModel;
     }
+
+    /**
+     * Gets the JUNG layoutAlgorithm
+     *
+     * @return
+     */
+    public final LayoutAlgorithm<N> layoutAlgorithm() {
+        return layoutAlgorithm;
+    }
+
 
     /**
      * Gets the JUNG graph
@@ -244,7 +258,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             sceneLayout.performLayout();
         }
         JComponent view = super.createView();
-        if (!was && layout instanceof IterativeContext && animate) {
+        if (!was && layoutAlgorithm instanceof IterativeContext && animate) {
             startAnimation();
         }
         return view;
@@ -291,19 +305,19 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     /**
      * Set the JUNG layout, triggering a re-layout of the scene
      *
-     * @param layout The layout, may not be null
+     * @param layoutAlgorithm The layout, may not be null
      * @param animate If true, animate the node widgets to their new locations
      */
-    public final void setGraphLayout(Layout<N, E> layout, boolean animate) {
-        assert layout != null : "Layout null";
+    public final void setGraphLayout(LayoutAlgorithm<N> layoutAlgorithm, boolean animate) {
+        assert layoutAlgorithm != null : "Layout null";
         timer.stop();
-        this.layout = layout;
+        this.layoutAlgorithm = layoutAlgorithm;
         sceneLayout.performLayout(animate);
-        if (this.animate && layout instanceof IterativeContext && getView() != null) {
+        if (this.animate && layoutAlgorithm instanceof IterativeContext && getView() != null) {
             startAnimation();
-        } else if (!this.animate && layout instanceof IterativeContext) {
+        } else if (!this.animate && layoutAlgorithm instanceof IterativeContext) {
             // Fast forward it a bit
-            IterativeContext ctx = (IterativeContext) layout;
+            IterativeContext ctx = (IterativeContext) layoutAlgorithm;
             if (!ctx.done() && fastForwardIterations > 0) {
                 try {
                     for (int i = 0; i < fastForwardIterations; i++) {
@@ -346,7 +360,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         boolean old = this.animate;
         if (old != val) {
             this.animate = val;
-            if (val && this.layout instanceof IterativeContext && getView() != null) {
+            if (val && this.layoutAlgorithm instanceof IterativeContext && getView() != null) {
                 startAnimation();
             } else if (!val) {
                 timer.stop();
@@ -394,10 +408,10 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
     /**
      * Set the JUNG layout, triggering a re-layout of the scene
      *
-     * @param layout
+     * @param layoutAlgorithm
      */
-    public final void setGraphLayout(Layout<N, E> layout) {
-        setGraphLayout(layout, false);
+    public final void setGraphLayout(LayoutAlgorithm<N> layoutAlgorithm) {
+        setGraphLayout(layoutAlgorithm, false);
     }
 
     /**
@@ -436,7 +450,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param target The target node
      */
     public final void addGraphEdge(E edge, N source, N target) {
-        graph.addEdge(edge, source, target);
+        graph.addEdge(source, target, edge);
     }
 
     public static final class GraphMutator<N, E> implements AutoCloseable {
@@ -496,7 +510,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         // Get the current set of nodes the scene knows about
         Set<N> currNodes = new HashSet<>(super.getNodes());
         // Get the set the graph knows about
-        Collection<N> nodes = graph.getVertices();
+        Collection<N> nodes = graph.vertexSet();
         // Add any not present in the current set
         for (N n : nodes) {
             if (!currNodes.contains(n)) {
@@ -515,15 +529,15 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }
         // Remove any edges we need to, and add any we don't know about
         Set<E> currEdges = new HashSet<>(super.getEdges());
-        for (E e : graph.getEdges()) {
+        for (E e : graph.edgeSet()) {
             if (!currEdges.contains(e)) {
-                N src = graph.getSource(e);
-                N dest = graph.getDest(e);
-                if (src == null && dest == null) {
-                    Pair<N> p = graph.getEndpoints(e);
-                    src = p.getFirst();
-                    dest = p.getSecond();
-                }
+                N src = graph.getEdgeSource(e);
+                N dest = graph.getEdgeTarget(e);
+//                if (src == null && dest == null) {
+//                    Pair<N> p = graph.getEndpoints(e);
+//                    src = p.getFirst();
+//                    dest = p.getSecond();
+//                }
                 addEdge(e);
                 setEdgeSource(e, src);
                 setEdgeTarget(e, dest);
@@ -557,13 +571,13 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param transformer An thing which makes line shapes
      */
     @SuppressWarnings(value = "unchecked")
-    public void setConnectionEdgeShape(Transformer<Context<Graph<N, E>, E>, Shape> transformer) {
+    public void setConnectionEdgeShape(Function<Context<Graph<N, E>, E>, Shape> transformer) {
         Set<Widget> parents = new HashSet<>();
         for (E edge : getEdges()) {
             Widget w = findWidget(edge);
             if (w instanceof JungConnectionWidget) {
                 parents.add(w.getParentWidget());
-                ((JungConnectionWidget<N, E>) w).setTransformer(transformer);
+                ((JungConnectionWidget<N, E>) w).setFunction(transformer);
                 w.revalidate();
             }
         }
@@ -631,14 +645,14 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             super(JungScene.this);
         }
 
-        private Point toPoint(Point2D p) {
+        private java.awt.Point toPoint(Point2D p) {
             // A little pointless conversion code to get a java.awt.Point from a
             // Point2D
-            Point result;
-            if (p instanceof Point) {
-                result = (Point) p;
+            java.awt.Point result;
+            if (p instanceof java.awt.Point) {
+                result = (java.awt.Point) p;
             } else {
-                result = new Point((int) p.getX(), (int) p.getY());
+                result = new java.awt.Point((int) p.getX(), (int) p.getY());
             }
             return result;
         }
@@ -657,7 +671,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             JComponent vw = getView();
             if (vw != null) {
                 try {
-                    layout.setSize(vw.getSize());
+                    layoutModel.setSize(vw.getSize().width, vw.getSize().height);
                 } catch (UnsupportedOperationException e) {
                     // some layouts dont support this
                 }
@@ -671,11 +685,12 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
 
             // Iterate the vertices and make sure the widgets locations
             // match the graph
-            Collection<N> nodes = graph.getVertices();
+            Collection<N> nodes = graph.vertexSet();
             for (N n : nodes) {
                 Widget widget = findWidget(n);
                 Point2D oldLocation = widget.getPreferredLocation();
-                Point2D newLocation = layout.transform(n);
+                org.jungrapht.visualization.layout.model.Point p = layoutModel.apply(n);
+                Point2D newLocation = new Point2D.Double(p.x, p.y);
 
                 if (oldLocation != null && animating) {
                     double length = Math.abs(oldLocation.distance(newLocation));
@@ -684,7 +699,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                     avgDist += length;
                 }
 
-                Point p1 = toPoint(newLocation);
+                java.awt.Point p1 = toPoint(newLocation);
                 if (animate) {
                     getSceneAnimator().animatePreferredLocation(widget, p1);
                 } else {
@@ -693,7 +708,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             }
             // Avoid div by zero
             avgDist /= nodes.isEmpty() ? 0D : (double) nodes.size();
-            for (E e : graph.getEdges()) {
+            for (E e : graph.edgeSet()) {
                 Widget w = (Widget) findWidget(e);
                 if (w instanceof ConnectionWidget) {
                     ((ConnectionWidget) w).reroute();
@@ -702,7 +717,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                 }
             }
             JungScene.this.validate();
-            if (animating && evaluator.animationIsFinished(minDist, maxDist, avgDist, layout)) {
+            if (animating && evaluator.animationIsFinished(minDist, maxDist, avgDist, layoutAlgorithm)) {
                 timer.stop();
             }
         }
@@ -721,12 +736,13 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         }
 
         @Override
-        public Point getOriginalLocation(Widget widget) {
+        public java.awt.Point getOriginalLocation(Widget widget) {
             return delegate.getOriginalLocation(widget);
         }
 
         @Override
-        public void setNewLocation(Widget widget, Point location) {
+        public void setNewLocation(Widget widget, java.awt.Point location) {
+            Point p = Point.of(location.x, location.y);
             N node = null;
             for (N n : getNodes()) {
                 if (findWidget(n) == widget) {
@@ -735,12 +751,12 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                 }
             }
             if (node != null) {
-                layout.setLocation(node, location);
-                for (E e : graph.getOutEdges(node)) {
+                layoutModel.set(node, p);
+                for (E e : graph.outgoingEdgesOf(node)) {
                     Widget w = findWidget(e);
                     w.revalidate();
                 }
-                for (E e : graph.getInEdges(node)) {
+                for (E e : graph.incomingEdgesOf(node)) {
                     Widget w = findWidget(e);
                     w.revalidate();
 
@@ -798,40 +814,66 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * If the graph is an ObservableGraph, listens for changes in it and
      * adds/removes nodes appropriately
      */
-    private class GraphEventAdapter implements GraphEventListener<N, E> {
+    private class GraphEventAdapter implements GraphListener<N, E> {
 
         @Override
-        public void handleGraphEvent(GraphEvent<N, E> ge) {
-            switch (ge.getType()) {
-                case VERTEX_ADDED: {
-                    GraphEvent.Vertex<N, E> v = (GraphEvent.Vertex<N, E>) ge;
-                    addNode(v.getVertex());
-                    break;
-                }
-                case VERTEX_REMOVED: {
-                    GraphEvent.Vertex<N, E> v = (GraphEvent.Vertex<N, E>) ge;
-                    removeNode(v.getVertex());
-                    break;
-                }
-                case EDGE_ADDED: {
-                    GraphEvent.Edge<N, E> e = (GraphEvent.Edge<N, E>) ge;
-                    N src = graph.getSource(e.getEdge());
-                    N dest = graph.getDest(e.getEdge());
-                    addEdge(e.getEdge());
-                    setEdgeSource(e.getEdge(), src);
-                    setEdgeTarget(e.getEdge(), dest);
-                    break;
-                }
-                case EDGE_REMOVED: {
-                    GraphEvent.Edge<N, E> e = (GraphEvent.Edge<N, E>) ge;
-                    removeEdge(e.getEdge());
-                    break;
-                }
-                default:
-                    throw new AssertionError(ge.getType());
-            }
+        public void vertexAdded(GraphVertexChangeEvent<N> e) {
+            addNode(e.getVertex());
             validate();
         }
+        @Override
+        public void vertexRemoved(GraphVertexChangeEvent<N> e) {
+            removeNode(e.getVertex());
+            validate();
+        }
+        @Override
+        public void edgeAdded(GraphEdgeChangeEvent<N,E> e) {
+            E edge = e.getEdge();
+            N source = graph.getEdgeSource(edge);
+            N target = graph.getEdgeTarget(edge);
+            addEdge(edge);
+            setEdgeSource(edge, source);
+            setEdgeTarget(edge, target);
+            validate();
+        }
+        @Override
+        public void edgeRemoved(GraphEdgeChangeEvent<N,E> e) {
+            removeEdge(e.getEdge());
+            validate();
+        }
+//        @Override
+//        public void handleGraphEvent(GraphVertexChangeEvent<N> ge) {
+//            switch (ge.getType()) {
+//                case VERTEX_ADDED: {
+//
+////                    GraphEvent.Vertex<N, E> v = (GraphEvent.Vertex<N, E>) ge;
+//                    addNode(ge.getVertex());
+//                    break;
+//                }
+//                case VERTEX_REMOVED: {
+////                    GraphEvent.Vertex<N, E> v = (GraphEvent.Vertex<N, E>) ge;
+//                    removeNode(ge.getVertex());
+//                    break;
+//                }
+//                case EDGE_ADDED: {
+//                    GraphEvent.Edge<N, E> e = (GraphEvent.Edge<N, E>) ge;
+//                    N src = graph.getSource(e.getEdge());
+//                    N dest = graph.getDest(e.getEdge());
+//                    addEdge(e.getEdge());
+//                    setEdgeSource(e.getEdge(), src);
+//                    setEdgeTarget(e.getEdge(), dest);
+//                    break;
+//                }
+//                case EDGE_REMOVED: {
+//                    GraphEvent.Edge<N, E> e = (GraphEvent.Edge<N, E>) ge;
+//                    removeEdge(e.getEdge());
+//                    break;
+//                }
+//                default:
+//                    throw new AssertionError(ge.getType());
+//            }
+//            validate();
+//        }
     }
 
     private class TimerListener implements ActionListener {
@@ -842,8 +884,8 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             if (!animate) {
                 return;
             }
-            if (layout instanceof IterativeContext) {
-                IterativeContext c = (IterativeContext) layout;
+            if (layoutAlgorithm instanceof IterativeContext) {
+                IterativeContext c = (IterativeContext) layoutAlgorithm;
                 try {
                     c.step();
                 } catch (Exception ex) {
