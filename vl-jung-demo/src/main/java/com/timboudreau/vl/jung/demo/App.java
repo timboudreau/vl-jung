@@ -72,6 +72,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.geom.Ellipse2D;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -136,8 +137,10 @@ public class App {
             mdl.addElement(new BalloonLayoutAlgorithm());
             mdl.addElement(new RadialTreeLayoutAlgorithm());
         }
-        mdl.addElement(new TidierTreeLayoutAlgorithm());
-        mdl.addElement(new TidierRadialTreeLayoutAlgorithm());
+        mdl.addElement(TidierTreeLayoutAlgorithm.edgeAwareBuilder()
+                .vertexShapeFunction(v -> new Ellipse2D.Double(-10, -10, 20, 20)).build());
+        mdl.addElement(TidierRadialTreeLayoutAlgorithm.edgeAwareBuilder()
+                .vertexShapeFunction(v -> new Ellipse2D.Double(-10, -10, 20, 20)).build());
         mdl.addElement(new CircleLayoutAlgorithm());
         mdl.addElement(FRLayoutAlgorithm.builder().repulsionContractBuilder(BarnesHutFRRepulsion.barnesHutBuilder()).build());
         mdl.addElement(new ISOMLayoutAlgorithm());
@@ -145,7 +148,7 @@ public class App {
         mdl.addElement(new DAGLayoutAlgorithm());
         mdl.addElement(GEMLayoutAlgorithm.edgeAwareBuilder().build());
         mdl.addElement(ForceAtlas2LayoutAlgorithm.builder()
-                .repulsionContractBuilder(BarnesHutFA2Repulsion.builder())
+                .repulsionContractBuilder(BarnesHutFA2Repulsion.builder().repulsionK(300))
         .build());
         mdl.addElement(EiglspergerLayoutAlgorithm.edgeAwareBuilder()
                 .edgeShapeFunctionConsumer(context -> scene.setConnectionEdgeShape(context))
