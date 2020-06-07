@@ -34,17 +34,23 @@ import org.jungrapht.visualization.decorators.EdgeShape;
 import org.jungrapht.visualization.layout.algorithms.BalloonLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.CircleLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.DAGLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.EiglspergerLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.FRLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.ForceAtlas2LayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.GEMLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.ISOMLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.KKLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.RadialTreeLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.SpringLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.TidierRadialTreeLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.TidierTreeLayoutAlgorithm;
 import org.jungrapht.visualization.layout.algorithms.TreeLayoutAlgorithm;
+import org.jungrapht.visualization.layout.algorithms.repulsion.BarnesHutFA2Repulsion;
 import org.jungrapht.visualization.layout.algorithms.repulsion.BarnesHutFRRepulsion;
 import org.jungrapht.visualization.layout.algorithms.repulsion.BarnesHutSpringRepulsion;
-import org.jungrapht.visualization.layout.model.DefaultLayoutModel;
-import org.jungrapht.visualization.layout.model.LayoutModel;
+import org.jungrapht.visualization.layout.algorithms.sugiyama.Layering;
+import org.jungrapht.visualization.layout.algorithms.util.EdgeShapeFunctionSupplier;
 import org.jungrapht.visualization.util.Context;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
@@ -104,6 +110,7 @@ public class App {
             Exceptions.printStackTrace(ex);
         }
 
+
         final JFrame jf = new JFrame("Visual Library + JUNG Demo");
         jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         GraphAndForest gf = loadGraph(args);
@@ -129,14 +136,22 @@ public class App {
             mdl.addElement(new BalloonLayoutAlgorithm());
             mdl.addElement(new RadialTreeLayoutAlgorithm());
         }
+        mdl.addElement(new TidierTreeLayoutAlgorithm());
+        mdl.addElement(new TidierRadialTreeLayoutAlgorithm());
         mdl.addElement(new CircleLayoutAlgorithm());
         mdl.addElement(FRLayoutAlgorithm.builder().repulsionContractBuilder(BarnesHutFRRepulsion.barnesHutBuilder()).build());
-//        mdl.addElement(new FRLayout2(gf.graph));
         mdl.addElement(new ISOMLayoutAlgorithm());
         mdl.addElement(SpringLayoutAlgorithm.builder().repulsionContractBuilder(BarnesHutSpringRepulsion.barnesHutBuilder()).build());
-//        mdl.addElement(new SpringLayout2(gf.graph));
         mdl.addElement(new DAGLayoutAlgorithm());
-//        mdl.addElement(new XLayout(g));
+        mdl.addElement(GEMLayoutAlgorithm.edgeAwareBuilder().build());
+        mdl.addElement(ForceAtlas2LayoutAlgorithm.builder()
+                .repulsionContractBuilder(BarnesHutFA2Repulsion.builder())
+        .build());
+        mdl.addElement(EiglspergerLayoutAlgorithm.edgeAwareBuilder()
+                .edgeShapeFunctionConsumer(context -> scene.setConnectionEdgeShape(context))
+                .layering(Layering.COFFMAN_GRAHAM)
+                .build());
+
         mdl.setSelectedItem(layout);
         final JCheckBox checkbox = new JCheckBox("Animate iterative layouts");
 
@@ -152,29 +167,14 @@ public class App {
         });
         bar.add(new JLabel(" Layout Type"));
         bar.add(layouts);
-        layouts.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                LayoutAlgorithm layout = (LayoutAlgorithm) layouts.getSelectedItem();
-                // These two layouts implement IterativeContext, but they do
-                // not evolve toward anything, they just randomly rearrange
-                // themselves.  So disable animation for these.
-                if (layout instanceof ISOMLayoutAlgorithm || layout instanceof DAGLayoutAlgorithm) {
-                    checkbox.setSelected(false);
-                }
-                scene.setGraphLayout(layout, true);
-            }
-        });
 
         bar.add(new JLabel(" Connection Shape"));
         DefaultComboBoxModel<Function<Context<Graph<String, String>, String>, Shape>> shapes = new DefaultComboBoxModel<>();
         shapes.addElement(new EdgeShape.QuadCurve<String, String>());
-//        shapes.addElement(new EdgeShape.BentLine<String, String>());
         shapes.addElement(new EdgeShape.CubicCurve<String, String>());
         shapes.addElement(new EdgeShape.Line<String, String>());
         shapes.addElement(new EdgeShape.Box<String, String>());
-//        shapes.addElement(new EdgeShape.Orthogonal<String, String>());
-//        shapes.addElement(new EdgeShape.Wedge<String, String>(10));
+        shapes.addElement(new EdgeShape.ArticulatedLine<>());
 
         final JComboBox<Function<Context<Graph<String, String>, String>, Shape>> shapesBox = new JComboBox<>(shapes);
         shapesBox.addActionListener(new ActionListener() {
@@ -195,6 +195,24 @@ public class App {
         });
         shapesBox.setSelectedItem(new EdgeShape.QuadCurve<>());
         bar.add(shapesBox);
+
+
+        layouts.addActionListener(ae -> {
+            LayoutAlgorithm layout1 = (LayoutAlgorithm) layouts.getSelectedItem();
+            if (!(layout1 instanceof EdgeShapeFunctionSupplier)) {
+                Function<Context<Graph<String, String>, String>, Shape> xform =
+                        (Function<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
+                scene.setConnectionEdgeShape( xform);
+            }
+            // These two layouts implement IterativeContext, but they do
+            // not evolve toward anything, they just randomly rearrange
+            // themselves.  So disable animation for these.
+            if (layout1 instanceof ISOMLayoutAlgorithm || layout1 instanceof DAGLayoutAlgorithm) {
+                checkbox.setSelected(false);
+            }
+            scene.setGraphLayout(layout1, true);
+        });
+
         jf.add(bar, BorderLayout.NORTH);
         bar.add(new MinSizePanel(scene.createSatelliteView()));
         bar.setFloatable(false);
@@ -328,7 +346,7 @@ public class App {
                 Graph<String, String> graph = GraphTypeBuilder.<String,String>undirected()
                         .allowingSelfLoops(true)
                         .allowingMultipleEdges(true).buildGraph();
-//                        new UndirectedOrderedSparseMultigraph<String, String>();
+
                 String[] arr = new String[2];
                 Set<String> pairs = new HashSet<>();
                 try (BufferedReader br = new BufferedReader(new FileReader(f))) {
@@ -365,7 +383,6 @@ public class App {
             Graph<String, String> forest = GraphTypeBuilder.<String,String>directed()
                     .edgeSupplier(BalloonLayoutDemo.edgeFactory).buildGraph();
 
-//                    new DelegateForest<>();
             ListenableGraph<String, String> g = new DefaultListenableGraph(new BalloonLayoutDemo().createTree(forest));
             return new GraphAndForest(g, forest);
         }

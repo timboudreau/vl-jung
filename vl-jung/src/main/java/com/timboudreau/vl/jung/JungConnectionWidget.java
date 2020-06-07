@@ -33,6 +33,8 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.util.function.Function;
 
@@ -53,6 +55,9 @@ public class JungConnectionWidget<V, E> extends Widget {
     private final E edge;
     private Function<Context<Graph<V, E>, E>, Shape> transformer;
 
+    public void setEdgeShapeFunction(Function<Context<Graph<V, E>, E>, Shape> transformer) {
+        this.transformer = transformer;
+    }
     public static <V, E> JungConnectionWidget<V, E> createQuadratic(JungScene<V, E> scene, E edge) {
         return new JungConnectionWidget<>(scene, new EdgeShape.QuadCurve<V, E>(), edge);
     }
@@ -64,10 +69,6 @@ public class JungConnectionWidget<V, E> extends Widget {
     public static <V, E> JungConnectionWidget<V, E> createOrthogonal(JungScene<V, E> scene, E edge) {
         return new JungConnectionWidget<>(scene, new EdgeShape.Orthogonal<V, E>(), edge);
     }
-
-//    public static <V, E> JungConnectionWidget<V, E> createBent(JungScene<V, E> scene, E edge) {
-//        return new JungConnectionWidget<>(scene, new EdgeShape.BentLine<V, E>(), edge);
-//    }
 
     public static <V, E> JungConnectionWidget<V, E> createArticulated(JungScene<V, E> scene, E edge) {
         return new JungConnectionWidget<>(scene, new EdgeShape.ArticulatedLine<>(), edge);
@@ -138,7 +139,6 @@ public class JungConnectionWidget<V, E> extends Widget {
         Context<Graph<V, E>, E> c = Context.getInstance(graph, edge);
         Shape edgeShape = transformer.apply(c);
 
-//        Pair<V> nodes = graph.getEndpoints(edge);
         V source = graph.getEdgeSource(edge);
         V target = graph.getEdgeTarget(edge);
         LayoutModel<V> layoutModel = scene.layoutModel;
@@ -175,7 +175,12 @@ public class JungConnectionWidget<V, E> extends Widget {
         float thetaRadians = (float) Math.atan2(dy, dx);
         xform.rotate(thetaRadians);
         float dist = (float) Math.sqrt(dx * dx + dy * dy);
-        xform.scale(dist, 1.0);
+
+        if (edgeShape instanceof Path2D) {
+            xform.scale(dist, dist);
+        } else {
+            xform.scale(dist, 1.0);
+        }
 
         edgeShape = xform.createTransformedShape(edgeShape);
         return edgeShape;

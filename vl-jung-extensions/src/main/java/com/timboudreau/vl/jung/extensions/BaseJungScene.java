@@ -443,18 +443,20 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
             }
             Set<N> connectedNodes = new HashSet<>();
             for (Object o : newlySelected) {
-                N n = (N) o;
-                Collection<E> edges = graph.outgoingEdgesOf(n);
-                if (edges != null) {
-                    for (E edge : graph.outgoingEdgesOf(n)) {
-                        closeEdges.add(edge);
-                        otherEdges.remove(edge);
-                        N opp = graph.getEdgeTarget(edge);
-                        remainingNodes.remove(opp);
-                        connectedNodes.add(opp);
-                        if (!newlySelected.contains(opp)) {
-                            Widget w = findWidget(opp);
-                            onNodeConnectedToSelection(w, opp);
+                if (graph.vertexSet().contains(o)) {
+                    N n = (N) o;
+                    Collection<E> edges = graph.outgoingEdgesOf(n);
+                    if (edges != null) {
+                        for (E edge : graph.outgoingEdgesOf(n)) {
+                            closeEdges.add(edge);
+                            otherEdges.remove(edge);
+                            N opp = graph.getEdgeTarget(edge);
+                            remainingNodes.remove(opp);
+                            connectedNodes.add(opp);
+                            if (!newlySelected.contains(opp)) {
+                                Widget w = findWidget(opp);
+                                onNodeConnectedToSelection(w, opp);
+                            }
                         }
                     }
                 }

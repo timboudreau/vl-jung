@@ -80,6 +80,9 @@ public class BalloonLayoutDemo {
         graph.addVertex("D2");
         graph.addEdge("B1", "D2");
 
+        graph.addEdge(base, "D2");
+        graph.addEdge(base, "C3");
+
         graph.addVertex("E0");
         graph.addEdge("B2", "E0");
         graph.addVertex("E1");
@@ -141,6 +144,8 @@ public class BalloonLayoutDemo {
     	graph.addEdge("J1", "J4");
         graph.addVertex("J3");
     	graph.addEdge("J2", "J3");
+
+    	graph.addEdge(base, "J4");
 
         graph.addVertex("J5");
     	graph.addEdge("J2", "J5");

@@ -31,13 +31,13 @@ import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JComponent;
-import javax.swing.Timer;
+import javax.swing.*;
 
 import org.jgrapht.Graph;
 import org.jgrapht.ListenableGraph;
@@ -533,11 +533,6 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             if (!currEdges.contains(e)) {
                 N src = graph.getEdgeSource(e);
                 N dest = graph.getEdgeTarget(e);
-//                if (src == null && dest == null) {
-//                    Pair<N> p = graph.getEndpoints(e);
-//                    src = p.getFirst();
-//                    dest = p.getSecond();
-//                }
                 addEdge(e);
                 setEdgeSource(e, src);
                 setEdgeTarget(e, dest);
@@ -563,6 +558,8 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         return sceneLayout;
     }
 
+
+
     /**
      * Set the object which creates Shape objects for edges when using
      * JungConnectionWidget. JUNG's class EdgeShape contains a number of useful
@@ -576,6 +573,8 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
         for (E edge : getEdges()) {
             Widget w = findWidget(edge);
             if (w instanceof JungConnectionWidget) {
+                JungConnectionWidget jcw = (JungConnectionWidget)w;
+                jcw.setEdgeShapeFunction(transformer);
                 parents.add(w.getParentWidget());
                 ((JungConnectionWidget<N, E>) w).setFunction(transformer);
                 w.revalidate();
@@ -677,11 +676,28 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                 }
             }
 
+            layoutModel.accept(layoutAlgorithm);
+
+            // add event listeners to cause repaint
+            layoutModel.getLayoutStateChangeSupport().addLayoutStateChangeListener(evt -> {
+                if (!evt.active) {
+                    // the layoutAlgorithm is done
+                    placeWidgets();
+                }
+            });
+
+            if (layoutAlgorithm instanceof IterativeContext) {
+                // place widgets and let the Timer sample the locations
+                placeWidgets();
+            }
+        }
+
+        protected void placeWidgets() {
+
+            boolean animating = timer.isRunning();
             minDist = Double.MAX_VALUE;
             maxDist = Double.MIN_VALUE;
             avgDist = 0D;
-
-            boolean animating = timer.isRunning();
 
             // Iterate the vertices and make sure the widgets locations
             // match the graph
@@ -716,7 +732,9 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
                     w.revalidate();
                 }
             }
-            JungScene.this.validate();
+            SwingUtilities.invokeLater(() ->
+                    JungScene.this.validate());
+
             if (animating && evaluator.animationIsFinished(minDist, maxDist, avgDist, layoutAlgorithm)) {
                 timer.stop();
             }
@@ -841,39 +859,6 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             removeEdge(e.getEdge());
             validate();
         }
-//        @Override
-//        public void handleGraphEvent(GraphVertexChangeEvent<N> ge) {
-//            switch (ge.getType()) {
-//                case VERTEX_ADDED: {
-//
-////                    GraphEvent.Vertex<N, E> v = (GraphEvent.Vertex<N, E>) ge;
-//                    addNode(ge.getVertex());
-//                    break;
-//                }
-//                case VERTEX_REMOVED: {
-////                    GraphEvent.Vertex<N, E> v = (GraphEvent.Vertex<N, E>) ge;
-//                    removeNode(ge.getVertex());
-//                    break;
-//                }
-//                case EDGE_ADDED: {
-//                    GraphEvent.Edge<N, E> e = (GraphEvent.Edge<N, E>) ge;
-//                    N src = graph.getSource(e.getEdge());
-//                    N dest = graph.getDest(e.getEdge());
-//                    addEdge(e.getEdge());
-//                    setEdgeSource(e.getEdge(), src);
-//                    setEdgeTarget(e.getEdge(), dest);
-//                    break;
-//                }
-//                case EDGE_REMOVED: {
-//                    GraphEvent.Edge<N, E> e = (GraphEvent.Edge<N, E>) ge;
-//                    removeEdge(e.getEdge());
-//                    break;
-//                }
-//                default:
-//                    throw new AssertionError(ge.getType());
-//            }
-//            validate();
-//        }
     }
 
     private class TimerListener implements ActionListener {

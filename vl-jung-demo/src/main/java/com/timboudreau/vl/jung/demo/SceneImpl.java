@@ -28,10 +28,8 @@ package com.timboudreau.vl.jung.demo;
 import com.timboudreau.vl.jung.MultiMoveAction;
 import com.timboudreau.vl.jung.ObjectSceneAdapter;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
-import org.jgrapht.Graph;
 import org.jgrapht.ListenableGraph;
 import org.jungrapht.visualization.layout.algorithms.LayoutAlgorithm;
-import org.jungrapht.visualization.layout.model.LayoutModel;
 import org.netbeans.api.visual.model.ObjectSceneEvent;
 import org.netbeans.api.visual.model.ObjectSceneEventType;
 import org.netbeans.api.visual.widget.LabelWidget;
@@ -82,13 +80,10 @@ class SceneImpl extends BaseJungScene<String, String> {
             if (!EventQueue.isDispatchThread()) {
                 EventQueue.invokeLater(this);
             } else if (widget != null && hover != null) {
-//                Pair<String> endpoints = graph().getEndpoints(hover);
-//                String lbl = "EDGE " + hover + " (" + endpoints.getFirst() + " -> " + endpoints.getSecond() + ")";
                 Rectangle r = widget.getClientArea();
                 Point p = new Point((int) r.getCenterX(), (int) r.getCenterY());
                 label.setForeground(new Color(255, 255, 255, 0));
                 label.setPreferredLocation(p);
-//                label.setLabel(lbl);
                 getSceneAnimator().animateForegroundColor(label, Color.black);
             }
         }

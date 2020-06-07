@@ -53,11 +53,9 @@ public final class GraphSelection<N, E> {
         Set<?> selected = scene.getSelectedObjects();
         for (E e : scene.graph.incomingEdgesOf(node)) {
             N opposite = scene.graph.getEdgeSource(e);
-//                    getOpposite(node, e);
             for (E e1 : scene.graph.incomingEdgesOf(opposite)) {
                 if (e1 != e) {
                     N opposite2 = scene.graph.getEdgeSource(e);
-//                            .getOpposite(opposite, e1);
                     if (selected.contains(opposite2)) {
                         return true;
                     }
@@ -101,7 +99,6 @@ public final class GraphSelection<N, E> {
         for (E e : edges) {
             N source = scene.graph.getEdgeSource(e);
             N target = scene.graph.getEdgeTarget(e);
-//            Pair<N> p = scene.graph.getEndpoints(e);
             if (!sel.contains(source)) {
                 result.add(source);
             }
@@ -130,7 +127,5 @@ public final class GraphSelection<N, E> {
     public boolean isAttachedToSelection(E edge) {
         Set<N> nodes = getSelection();
         return nodes.contains(scene.graph.getEdgeSource(edge)) || nodes.contains(scene.graph.getEdgeTarget(edge));
-//        nodes.retainAll(scene.graph.getEndpoints(edge));
-//        return !nodes.isEmpty();
     }
 }
