@@ -96,6 +96,8 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      */
     @SuppressWarnings("unchecked")
     protected JungScene(Graph<N, E> graph, Layout layout) {
+        assert layout != null : "Layout null";
+        assert graph != null : "Graph null";
         this.graph = graph;
         this.layout = layout;
         timer.setRepeats(true);

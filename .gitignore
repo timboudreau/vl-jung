@@ -13,3 +13,5 @@ target/*
 /vl-jung-demo/target/
 /vl-jung-nbm/target/
 /maven-dependency-graph-fork/target/
+/mastfrog-graph-adapter/nbproject/
+/mastfrog-graph-adapter/target/

@@ -29,6 +29,7 @@ import com.timboudreau.vl.jung.MultiMoveAction;
 import com.timboudreau.vl.jung.ObjectSceneAdapter;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
 import edu.uci.ics.jung.algorithms.layout.Layout;
+import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.util.Pair;
 import java.awt.Color;
@@ -37,12 +38,6 @@ import java.awt.EventQueue;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import org.netbeans.api.visual.model.ObjectSceneEvent;
 import org.netbeans.api.visual.model.ObjectSceneEventType;
 import org.netbeans.api.visual.widget.LabelWidget;
@@ -54,12 +49,19 @@ import org.openide.util.RequestProcessor;
  *
  * @author Tim Boudreau
  */
-class SceneImpl extends BaseJungScene<String, String> {
+class SceneImpl<V, E> extends BaseJungScene<V, E> {
 
     private final LayerWidget edgeTooltipLayer = new LayerWidget(this);
     private final LabelWidget label = new LabelWidget(this);
 
-    public SceneImpl(ObservableGraph<String, String> graph, Layout layout) throws IOException {
+    public SceneImpl(ObservableGraph<V, E> graph, Layout layout) throws IOException {
+        super(graph, layout);
+        addChild(edgeTooltipLayer);
+        edgeTooltipLayer.addChild(label);
+        addObjectSceneListener(new HoverListener(), ObjectSceneEventType.OBJECT_HOVER_CHANGED);
+    }
+
+    public SceneImpl(Graph<V, E> graph, Layout layout) throws IOException {
         super(graph, layout);
         addChild(edgeTooltipLayer);
         edgeTooltipLayer.addChild(label);
@@ -67,8 +69,8 @@ class SceneImpl extends BaseJungScene<String, String> {
     }
 
     @Override
-    protected Widget createNodeWidget(String node) {
-        DemoWidget<String, String> w = new DemoWidget<String, String>(this, node);
+    protected Widget createNodeWidget(V node) {
+        DemoWidget<V, E> w = new DemoWidget<>(this, node);
         w.setLabel(node + "");
         w.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         w.getActions().addAction(new MultiMoveAction(relatedProvider(), moveProvider()));
@@ -79,14 +81,15 @@ class SceneImpl extends BaseJungScene<String, String> {
 
         private final RequestProcessor.Task task = RequestProcessor.getDefault().create(this);
         private Widget widget;
-        private String hover;
+        private Object hover;
 
         @Override
+        @SuppressWarnings("unchecked")
         public void run() {
             if (!EventQueue.isDispatchThread()) {
                 EventQueue.invokeLater(this);
             } else if (widget != null && hover != null) {
-                Pair<String> endpoints = graph().getEndpoints(hover);
+                Pair<V> endpoints = graph().getEndpoints((E) hover);
 //                String lbl = "EDGE " + hover + " (" + endpoints.getFirst() + " -> " + endpoints.getSecond() + ")";
                 Rectangle r = widget.getClientArea();
                 Point p = new Point((int) r.getCenterX(), (int) r.getCenterY());
@@ -100,7 +103,7 @@ class SceneImpl extends BaseJungScene<String, String> {
         @Override
         public void hoverChanged(ObjectSceneEvent event, Object previousHoveredObject, Object newHoveredObject) {
             if (newHoveredObject instanceof String) {
-                hover = (String) newHoveredObject;
+                hover = newHoveredObject;
                 widget = findWidget(hover);
                 task.schedule(750);
             } else {

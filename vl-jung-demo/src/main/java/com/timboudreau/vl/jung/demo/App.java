@@ -42,6 +42,7 @@ import edu.uci.ics.jung.algorithms.layout.SpringLayout2;
 import edu.uci.ics.jung.algorithms.layout.TreeLayout;
 import edu.uci.ics.jung.graph.DelegateForest;
 import edu.uci.ics.jung.graph.Forest;
+import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.UndirectedOrderedSparseMultigraph;
 import java.awt.BorderLayout;
@@ -114,17 +115,29 @@ public class App {
             Exceptions.printStackTrace(ex);
         }
 
-        final JFrame jf = new JFrame("Visual Library + JUNG Demo");
-        jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         GraphAndForest gf = loadGraph(args);
 
+        showDemo(gf);
+    }
+
+    public static JFrame showDemo(GraphAndForest gf) throws IOException {
+        return showDemo(gf.graph, gf.forest);
+    }
+
+    public static <V, E> JFrame showDemo(Graph<V, E> graph) throws IOException {
+        return showDemo(graph, null);
+    }
+
+    public static <V, E> JFrame showDemo(Graph<V, E> graph, Forest<V, E> forest) throws IOException {
+        final JFrame jf = new JFrame("Visual Library + JUNG Demo");
+        jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Layout layout;
         try {
-            layout = gf.forest == null ? new KKLayout(gf.graph) : new TreeLayout(gf.forest, 70, 70);
+            layout = forest == null ? new KKLayout(graph) : new TreeLayout(forest, 70, 70);
         } catch (IllegalArgumentException ex) {
-            layout = new KKLayout(gf.graph);
+            layout = new KKLayout(graph);
         }
-        final BaseJungScene scene = new SceneImpl(gf.graph, layout);
+        final BaseJungScene scene = new SceneImpl(graph, layout);
         jf.setLayout(new BorderLayout());
         jf.add(new JScrollPane(scene.createView()), BorderLayout.CENTER);
 
@@ -132,19 +145,19 @@ public class App {
         bar.setMargin(new Insets(5, 5, 5, 5));
         bar.setLayout(new FlowLayout(5));
         DefaultComboBoxModel<Layout> mdl = new DefaultComboBoxModel<>();
-        mdl.addElement(new KKLayout(gf.graph));
+        mdl.addElement(new KKLayout(graph));
         mdl.addElement(layout);
-        if (gf.forest != null) {
-            mdl.addElement(new BalloonLayout(gf.forest));
-            mdl.addElement(new RadialTreeLayout(gf.forest));
+        if (forest != null) {
+            mdl.addElement(new BalloonLayout(forest));
+            mdl.addElement(new RadialTreeLayout(forest));
         }
-        mdl.addElement(new CircleLayout(gf.graph));
-        mdl.addElement(new FRLayout(gf.graph));
-        mdl.addElement(new FRLayout2(gf.graph));
-        mdl.addElement(new ISOMLayout(gf.graph));
-        mdl.addElement(new SpringLayout(gf.graph));
-        mdl.addElement(new SpringLayout2(gf.graph));
-        mdl.addElement(new DAGLayout(gf.graph));
+        mdl.addElement(new CircleLayout(graph));
+        mdl.addElement(new FRLayout(graph));
+        mdl.addElement(new FRLayout2(graph));
+        mdl.addElement(new ISOMLayout(graph));
+        mdl.addElement(new SpringLayout(graph));
+        mdl.addElement(new SpringLayout2(graph));
+        mdl.addElement(new DAGLayout(graph));
 //        mdl.addElement(new XLayout(g));
         mdl.setSelectedItem(layout);
         final JCheckBox checkbox = new JCheckBox("Animate iterative layouts");
@@ -176,8 +189,8 @@ public class App {
         });
 
         bar.add(new JLabel(" Connection Shape"));
-        Function<String, Shape> first;
-        DefaultComboBoxModel<Function<String,Shape>> shapes = new DefaultComboBoxModel<>();
+        Function<E, Shape> first;
+        DefaultComboBoxModel<Function<E, Shape>> shapes = new DefaultComboBoxModel<>();
         shapes.addElement(first = JungConnectionWidget.quadratic(scene.graph()));
         shapes.addElement(JungConnectionWidget.bent(scene.graph()));
         shapes.addElement(JungConnectionWidget.cubic(scene.graph()));
@@ -187,12 +200,12 @@ public class App {
         shapes.addElement(JungConnectionWidget.simpleLoop(scene.graph()));
         shapes.addElement(JungConnectionWidget.wedge(scene.graph()));
 
-        final JComboBox<Function<String,Shape>> shapesBox = new JComboBox<>(shapes);
+        final JComboBox<Function<E, Shape>> shapesBox = new JComboBox<>(shapes);
         shapesBox.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent ae) {
-                Function<String,Shape> xform = (Function<String,Shape>) shapesBox.getSelectedItem();
+                Function<String, Shape> xform = (Function<String, Shape>) shapesBox.getSelectedItem();
                 scene.setConnectionEdgeShape(xform);
             }
         });
@@ -235,7 +248,6 @@ public class App {
         selectedNodes.addLookupListener(listener);
         selectedNodes.allInstances();
 
-
         checkbox.setSelected(true);
         checkbox.addItemListener(new ItemListener() {
             @Override
@@ -258,6 +270,7 @@ public class App {
             }
         });
         jf.setVisible(true);
+        return jf;
     }
 
     private static class MinSizePanel extends JPanel {

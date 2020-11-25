@@ -53,10 +53,10 @@ public class DemoWidget<N, E> extends Widget {
 
     private Stroke stroke = new BasicStroke(2);
     private String label = "";
-    final String node;
+    final N node;
     private final Lookup lkp;
 
-    public DemoWidget(JungScene<N, E> scene, String node) {
+    public DemoWidget(JungScene<N, E> scene, N node) {
         super(scene);
         lkp = Lookups.fixed(node);
         this.node = node;

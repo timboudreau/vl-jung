@@ -18,6 +18,7 @@
         <junit.version>4.13.1</junit.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <mastfrog.graph.version>2.7.1.1</mastfrog.graph.version>
     </properties>
     <modules>
         <module>vl-jung</module>
@@ -25,6 +26,7 @@
         <module>vl-jung-demo</module>
         <module>vl-jung-nbm</module>
         <!--<module>maven-dependency-graph-fork</module>-->
+        <module>mastfrog-graph-adapter</module>
     </modules>
     <scm>
         <url>git@github.com:timboudreau/vl-jung.git</url>
@@ -69,15 +71,16 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.mastfrog</groupId>
-                <artifactId>vl-jung</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>vl-jung-demo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.mastfrog</groupId>
-                <artifactId>vl-jung-extensions</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>2.2</version>
+                <scope>test</scope>
+            </dependency>            
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
@@ -207,6 +210,11 @@
                 <groupId>org.sonatype.sisu</groupId>
                 <artifactId>sisu-inject-plexus</artifactId>
                 <version>2.3.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.mastfrog</groupId>
+                <artifactId>graph</artifactId>
+                <version>${mastfrog.graph.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -366,5 +374,15 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <quiet>true</quiet>
+                    <doclint>none</doclint>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

@@ -36,6 +36,7 @@ import static com.timboudreau.vl.jung.extensions.States.SELECTED;
 import static com.timboudreau.vl.jung.extensions.States.UNRELATED_TO_SELECTION;
 import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
 import edu.uci.ics.jung.algorithms.layout.Layout;
+import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -59,12 +60,12 @@ import org.netbeans.api.visual.widget.Widget;
 import org.netbeans.api.visual.widget.general.IconNodeWidget;
 
 /**
- * A convenience base class for JUNG scenes which draws connections and 
- * handles layers correctly.
- * 
+ * A convenience base class for JUNG scenes which draws connections and handles
+ * layers correctly.
+ *
  * @author Tim Boudreau
  * @param <N>
- * @param <E> 
+ * @param <E>
  */
 public class BaseJungScene<N, E> extends JungScene<N, E> {
 
@@ -82,6 +83,41 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     public BaseJungScene(ObservableGraph<N, E> graph, Layout layout) throws IOException {
         this(graph, layout, GraphThemeImpl::new);
     }
+
+    public BaseJungScene(Graph<N, E> graph, Layout layout) throws IOException {
+        this(graph, layout, GraphThemeImpl::new);
+    }
+
+    public BaseJungScene(Graph<N, E> graph, Layout layout, Supplier<GraphTheme> themeSupplier) throws IOException {
+        super(graph, layout);
+        this.themeSupplier = themeSupplier;
+        colors = createColors();
+        // Selection layer is behind everything
+        addChild(selectionLayer);
+        // Rings also drawn behind everything but the selection
+        addChild(decorationLayer);
+        // Connections are drawn below the node widgets
+        addChild(connectionLayer);
+        // The layer where node widgets live
+        addChild(mainLayer);
+
+        // Use the built in rectangular selection action
+        getActions().addAction(ActionFactory.createRectangularSelectAction(this,
+                selectionLayer));
+
+        // Set some layouts
+        connectionLayer.setLayout(LayoutFactory.createAbsoluteLayout());
+        mainLayer.setLayout(LayoutFactory.createAbsoluteLayout());
+        // Zoom on scroll by default
+        getActions().addAction(createScrollWheelAction());
+
+        // Add the listener which will notice when we hover and update
+        // the node color
+        addObjectSceneListener(hover, ObjectSceneEventType.OBJECT_HOVER_CHANGED,
+                ObjectSceneEventType.OBJECT_SELECTION_CHANGED);
+    }
+
+    // keep this constructor for binary compatibility
     public BaseJungScene(ObservableGraph<N, E> graph, Layout layout, Supplier<GraphTheme> themeSupplier) throws IOException {
         super(graph, layout);
         this.themeSupplier = themeSupplier;
@@ -104,7 +140,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
         mainLayer.setLayout(LayoutFactory.createAbsoluteLayout());
         // Zoom on scroll by default
         getActions().addAction(createScrollWheelAction());
-        
+
         // Add the listener which will notice when we hover and update
         // the node color
         addObjectSceneListener(hover, ObjectSceneEventType.OBJECT_HOVER_CHANGED,
@@ -112,8 +148,9 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     }
 
     /**
-     * Create a color theme.  The default one starts with one color and
-     * modifies it to portray different selection states.
+     * Create a color theme. The default one starts with one color and modifies
+     * it to portray different selection states.
+     *
      * @return A theme
      */
     protected GraphTheme createColors() {
@@ -144,7 +181,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
         result.setLabel(node + "");
         return result;
     }
-    
+
     protected void attachActionsToNodeWidget(Widget widget) {
         widget.getActions().addAction(createNodeMoveAction());
         widget.getActions().addAction(createObjectHoverAction());
@@ -220,6 +257,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
 
     /**
      * Called when an edge stops being hovered
+     *
      * @param edge The edge
      * @param w The widget
      */
@@ -230,6 +268,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
 
     /**
      * Called when an edge becomes hovered
+     *
      * @param edge The edge
      * @param w The widget
      */
@@ -240,6 +279,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
 
     /**
      * Called when a node stops being hovered
+     *
      * @param n The node
      * @param w The widget
      */
@@ -260,6 +300,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
 
     /**
      * Called when a node starts being hovered
+     *
      * @param n The node
      * @param w The widget
      */
@@ -271,7 +312,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
         States[] states = state.isSelected()
                 ? new States[]{SELECTED, HOVERED}
                 : hasSelection
-                ? new States[]{HOVERED, connected ? CONNECTED_TO_SELECTION : indirect ? INDIRECTLY_CONNECTED_TO_SELECTION : UNRELATED_TO_SELECTION}
+                        ? new States[]{HOVERED, connected ? CONNECTED_TO_SELECTION : indirect ? INDIRECTLY_CONNECTED_TO_SELECTION : UNRELATED_TO_SELECTION}
                 : new States[]{HOVERED};
 
         Color c = colors.getEdgeColor(states);
@@ -284,6 +325,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
 
     /**
      * Called when the selection is cleared, once for every node widget
+     *
      * @param w The widget
      * @param n The node
      */
@@ -294,6 +336,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
 
     /**
      * Called when the selection is cleared, once for every edge widget
+     *
      * @param w The widget
      * @param e The edge
      */
@@ -303,6 +346,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
 
     /**
      * Called when a node becomes selected
+     *
      * @param w The widget
      * @param n The node
      */
@@ -314,6 +358,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     /**
      * Called when a node connected to this one was selected assuming it is not
      * also selected
+     *
      * @param w The widget
      * @param n The node
      */
@@ -325,10 +370,12 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     }
 
     /**
-     * Called when a node connected to this one is connected to the selected node,
-     * assuming this one is not selected or directly connected to the selected node
+     * Called when a node connected to this one is connected to the selected
+     * node, assuming this one is not selected or directly connected to the
+     * selected node
+     *
      * @param w The widget
-     * @param n The node 
+     * @param n The node
      */
     protected void onNodeIndirectlyConnectedToSelection(Widget w, N n) {
         getSceneAnimator().animateBackgroundColor(w, colors.getBackground(statesFor(INDIRECTLY_CONNECTED_TO_SELECTION, n)));
@@ -336,8 +383,9 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     }
 
     /**
-     * Called when a node becomes unconnected to any selected node due to a 
+     * Called when a node becomes unconnected to any selected node due to a
      * selection change
+     *
      * @param w The widget
      * @param n The node
      */
@@ -349,6 +397,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     /**
      * Called when an edge becomes connected to the selection due to a selection
      * change
+     *
      * @param e The edge
      */
     protected void onEdgeConnectedToSelection(E e) {
@@ -358,6 +407,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     /**
      * Called when an edge becomes connected to a node which is connected to the
      * selection but not selected itself, due to a selection change
+     *
      * @param e The edge
      */
     protected void onEdgeIndirectlyConnectedToSelection(E e) {
@@ -365,11 +415,12 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     }
 
     /**
-     * Get the set of states which apply to this object, in terms of an array
-     * of States.
+     * Get the set of states which apply to this object, in terms of an array of
+     * States.
+     *
      * @param curr A state to include in the reuslt if non-null
      * @param o The object - may be an edge or node
-     * @return 
+     * @return
      */
     public States[] statesFor(States curr, Object o) {
         ObjectState st = getObjectState(o);
