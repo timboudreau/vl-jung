@@ -9,8 +9,8 @@
     <url>http://timboudreau.com</url>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <netbeans.version>RELEASE731</netbeans.version>
-        <jung.version>2.0.1</jung.version>
+        <netbeans.version>RELEASE113</netbeans.version>
+        <jung.version>2.1.1</jung.version>
     </properties>
     <modules>
         <module>vl-jung</module>

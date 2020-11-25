@@ -25,6 +25,8 @@
  */
 package com.timboudreau.vl.jung.demo;
 
+import com.google.common.base.Function;
+import com.timboudreau.vl.jung.JungConnectionWidget;
 import com.timboudreau.vl.jung.extensions.BaseJungScene;
 import edu.uci.ics.jung.algorithms.layout.BalloonLayout;
 import edu.uci.ics.jung.algorithms.layout.CircleLayout;
@@ -178,21 +180,23 @@ public class App {
         });
 
         bar.add(new JLabel(" Connection Shape"));
-        DefaultComboBoxModel<Transformer<Context<Graph<String, String>, String>, Shape>> shapes = new DefaultComboBoxModel<>();
-        shapes.addElement(new EdgeShape.QuadCurve<String, String>());
-        shapes.addElement(new EdgeShape.BentLine<String, String>());
-        shapes.addElement(new EdgeShape.CubicCurve<String, String>());
-        shapes.addElement(new EdgeShape.Line<String, String>());
-        shapes.addElement(new EdgeShape.Box<String, String>());
-        shapes.addElement(new EdgeShape.Orthogonal<String, String>());
-        shapes.addElement(new EdgeShape.Wedge<String, String>(10));
+        Function<String, Shape> first;
+        DefaultComboBoxModel<Function<String,Shape>> shapes = new DefaultComboBoxModel<>();
+        shapes.addElement(first = JungConnectionWidget.quadratic(scene.graph()));
+        shapes.addElement(JungConnectionWidget.bent(scene.graph()));
+        shapes.addElement(JungConnectionWidget.cubic(scene.graph()));
+        shapes.addElement(JungConnectionWidget.line(scene.graph()));
+        shapes.addElement(JungConnectionWidget.box(scene.graph()));
+        shapes.addElement(JungConnectionWidget.orthagonal(scene.graph()));
+        shapes.addElement(JungConnectionWidget.simpleLoop(scene.graph()));
+        shapes.addElement(JungConnectionWidget.wedge(scene.graph()));
 
-        final JComboBox<Transformer<Context<Graph<String, String>, String>, Shape>> shapesBox = new JComboBox<>(shapes);
+        final JComboBox<Function<String,Shape>> shapesBox = new JComboBox<>(shapes);
         shapesBox.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent ae) {
-                Transformer<Context<Graph<String, String>, String>, Shape> xform = (Transformer<Context<Graph<String, String>, String>, Shape>) shapesBox.getSelectedItem();
+                Function<String,Shape> xform = (Function<String,Shape>) shapesBox.getSelectedItem();
                 scene.setConnectionEdgeShape(xform);
             }
         });
@@ -203,7 +207,7 @@ public class App {
                 return super.getListCellRendererComponent(jlist, o, i, bln, bln1); //To change body of generated methods, choose Tools | Templates.
             }
         });
-        shapesBox.setSelectedItem(new EdgeShape.QuadCurve<>());
+        shapesBox.setSelectedItem(first);
         bar.add(shapesBox);
         jf.add(bar, BorderLayout.NORTH);
         bar.add(new MinSizePanel(scene.createSatelliteView()));

@@ -25,19 +25,18 @@
  */
 package com.timboudreau.vl.jung;
 
+import com.google.common.base.Function;
 import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.algorithms.util.IterativeContext;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.event.GraphEvent;
 import edu.uci.ics.jung.graph.event.GraphEventListener;
-import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.graph.util.Pair;
 import java.awt.Point;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,7 +46,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JComponent;
 import javax.swing.Timer;
-import org.apache.commons.collections15.Transformer;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.MoveProvider;
 import org.netbeans.api.visual.action.WidgetAction;
@@ -557,7 +555,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
      * @param transformer An thing which makes line shapes
      */
     @SuppressWarnings(value = "unchecked")
-    public void setConnectionEdgeShape(Transformer<Context<Graph<N, E>, E>, Shape> transformer) {
+    public void setConnectionEdgeShape(Function<E, Shape> transformer) {
         Set<Widget> parents = new HashSet<>();
         for (E edge : getEdges()) {
             Widget w = findWidget(edge);
@@ -675,7 +673,7 @@ public abstract class JungScene<N, E> extends GraphScene<N, E> {
             for (N n : nodes) {
                 Widget widget = findWidget(n);
                 Point2D oldLocation = widget.getPreferredLocation();
-                Point2D newLocation = layout.transform(n);
+                Point2D newLocation = layout.apply(n);
 
                 if (oldLocation != null && animating) {
                     double length = Math.abs(oldLocation.distance(newLocation));

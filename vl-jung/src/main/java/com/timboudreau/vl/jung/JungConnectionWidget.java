@@ -25,11 +25,13 @@
  */
 package com.timboudreau.vl.jung;
 
+import com.google.common.base.Function;
 import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.graph.util.Context;
 import edu.uci.ics.jung.graph.util.Pair;
 import edu.uci.ics.jung.visualization.decorators.EdgeShape;
+import edu.uci.ics.jung.visualization.decorators.ParallelEdgeShapeTransformer;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -39,7 +41,6 @@ import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
-import org.apache.commons.collections15.Transformer;
 import org.netbeans.api.visual.widget.Widget;
 
 /**
@@ -49,39 +50,121 @@ import org.netbeans.api.visual.widget.Widget;
  * @author Tim Boudreau
  */
 public class JungConnectionWidget<V, E> extends Widget {
+
     private Stroke stroke = new BasicStroke(2);
     private final E edge;
-    private Transformer<Context<Graph<V, E>, E>, Shape> transformer;
+    private Function<E, Shape> transformer;
+
+    static final class ES<V, E> extends EdgeShape<V, E> {
+
+        public ES(Graph<V, E> g) {
+            super(g);
+            Object o = super.box;
+        }
+
+        public ParallelEdgeShapeTransformer<V, E> box() {
+            return super.box;
+        }
+
+        public BentLine bent() {
+            return bent;
+        }
+
+        public Loop loop() {
+            return super.loop;
+        }
+
+        public Line line() {
+            return line;
+        }
+
+        public Orthogonal orthag() {
+            return orthag;
+        }
+
+        public SimpleLoop simpleLoop() {
+            return simpleLoop;
+        }
+
+        private final BentLine bent = new BentLine();
+        private final Line line = new Line();
+        private final Orthogonal orthag = new EdgeShape.Orthogonal();
+        private final SimpleLoop simpleLoop = new SimpleLoop();
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> quadratic(Graph<V, E> graph) {
+        return EdgeShape.quadCurve(graph);
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> cubic(Graph<V, E> graph) {
+        return EdgeShape.cubicCurve(graph);
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> orthagonal(Graph<V, E> graph) {
+        return new ES<>(graph).orthag();
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> bent(Graph<V, E> graph) {
+        return new ES<>(graph).bent();
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> loop(Graph<V, E> graph) {
+        return new ES<>(graph).loop();
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> box(Graph<V, E> graph) {
+        return new ES<>(graph).box();
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> simpleLoop(Graph<V, E> graph) {
+        return new ES<>(graph).simpleLoop();
+    }
+
+    public static <V, E> ParallelEdgeShapeTransformer<V, E> wedge(Graph<V, E> graph) {
+        return EdgeShape.wedge(graph, 2);
+    }
+
+    public static <E> Function<E, Shape> line(Graph<?, E> graph) {
+        return new ES<>(graph).line();
+    }
 
     public static <V, E> JungConnectionWidget<V, E> createQuadratic(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.QuadCurve<V, E>(), edge);
+        return new JungConnectionWidget<V, E>(scene, EdgeShape.quadCurve(scene.graph), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createCubic(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.CubicCurve<V, E>(), edge);
+        return new JungConnectionWidget<>(scene, EdgeShape.cubicCurve(scene.graph), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createOrthogonal(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Orthogonal<V, E>(), edge);
+        return new JungConnectionWidget<>(scene, EdgeShape.orthogonal(scene.graph), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createBent(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.BentLine<V, E>(), edge);
+        return new JungConnectionWidget<>(scene, wedge(scene.graph), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createLoop(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Loop<V, E>(), edge);
+        return new JungConnectionWidget<>(scene, loop(scene.graph), edge);
+    }
+
+    public static <V, E> JungConnectionWidget<V, E> createSimpleLoop(JungScene<V, E> scene, E edge) {
+        return new JungConnectionWidget<>(scene, simpleLoop(scene.graph), edge);
+    }
+
+    public static <V, E> JungConnectionWidget<V, E> createWegde(JungScene<V, E> scene, E edge) {
+        return new JungConnectionWidget<>(scene, wedge(scene.graph), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createBox(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<>(scene, new EdgeShape.Box<V, E>(), edge);
+        return new JungConnectionWidget<>(scene, new ES<>(scene.graph).box(), edge);
     }
 
     public JungConnectionWidget(JungScene<V, E> scene, E edge) {
-        this(scene, new EdgeShape.QuadCurve<V, E>(), edge);
+        this(scene, EdgeShape.quadCurve(scene.graph), edge);
     }
 
-    public JungConnectionWidget(JungScene<V, E> scene, Transformer<Context<Graph<V, E>, E>, Shape> transformer, E edge) {
+    public JungConnectionWidget(JungScene<V, E> scene, Function<E, Shape> transformer, E edge) {
         super(scene);
         this.edge = edge;
         this.transformer = transformer;
@@ -89,7 +172,7 @@ public class JungConnectionWidget<V, E> extends Widget {
         setOpaque(false);
     }
 
-    public void setTransformer(Transformer<Context<Graph<V, E>, E>, Shape> transformer) {
+    public void setTransformer(Function<E,Shape> transformer) {
         this.transformer = transformer;
     }
 
@@ -102,7 +185,7 @@ public class JungConnectionWidget<V, E> extends Widget {
         assert stroke != null : "Stroke null";
         this.stroke = stroke;
     }
-    
+
     public Stroke getStroke() {
         return stroke;
     }
@@ -128,11 +211,11 @@ public class JungConnectionWidget<V, E> extends Widget {
     }
 
     private Shape getShape() {
-        JungScene<V,E> scene = (JungScene<V,E>) getScene();
-        
+        JungScene<V, E> scene = (JungScene<V, E>) getScene();
+
         Graph<V, E> graph = getGraph();
         Context<Graph<V, E>, E> c = Context.getInstance(graph, edge);
-        Shape edgeShape = transformer.transform(c);
+        Shape edgeShape = transformer.apply(edge);
 
         Pair<V> nodes = graph.getEndpoints(edge);
         Layout<V, E> layout = scene.layout;
@@ -142,8 +225,8 @@ public class JungConnectionWidget<V, E> extends Widget {
         Widget w2 = scene.findWidget(nodes.getSecond());
         Rectangle r2 = w2.getClientArea();
 
-        Point2D firstLoc = layout.transform(nodes.getFirst());
-        Point2D secondLoc = layout.transform(nodes.getSecond());
+        Point2D firstLoc = layout.apply(nodes.getFirst());
+        Point2D secondLoc = layout.apply(nodes.getSecond());
 //        if (r1 != null) {
 //            r1.x = 0;
 //            r1.y = 0;
