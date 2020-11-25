@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.mastfrog</groupId>
     <version>2.0</version>
     <artifactId>visual-library-jung</artifactId>
     <name>Visual Library + Jung (parent)</name>
     <packaging>pom</packaging>
-    <url>http://timboudreau.com</url>
+    <url>https://github.com:timboudreau/vl-jung</url>
     <properties>
         <jung.version>2.1.1</jung.version>
         <netbeans.hint.license>bsd</netbeans.hint.license>

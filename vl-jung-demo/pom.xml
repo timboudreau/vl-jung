@@ -9,6 +9,7 @@
         <version>2.0</version>
     </parent>
     <artifactId>vl-jung-demo</artifactId>
+    <url>https://github.com:timboudreau/vl-jung</url>
     <name>Visual Library + Jung Demo</name>
     <scm>
         <url>git@github.com:timboudreau/vl-jung.git</url>
@@ -37,11 +38,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.mastfrog</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>vl-jung</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.mastfrog</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>vl-jung-extensions</artifactId>
         </dependency>
         <dependency>

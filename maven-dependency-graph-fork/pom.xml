@@ -9,6 +9,7 @@
     </parent>
     <packaging>nbm</packaging>
     <artifactId>maven-dependency-graph-fork</artifactId>
+    <url>https://github.com:timboudreau/vl-jung</url>
     <scm>
         <url>git@github.com:timboudreau/vl-jung.git</url>
         <connection>scm:git:https://github.com:timboudreau/vl-jung.git</connection>
