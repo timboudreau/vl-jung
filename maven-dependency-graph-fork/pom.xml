@@ -1,81 +1,79 @@
-<?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.timboudreau</groupId>
+        <groupId>com.mastfrog</groupId>
         <artifactId>visual-library-jung</artifactId>
-        <version>1.0</version>
+        <version>2.0</version>
     </parent>
     <packaging>nbm</packaging>
-    <groupId>com.timboudreau</groupId>
     <artifactId>maven-dependency-graph-fork</artifactId>
+    <scm>
+        <url>git@github.com:timboudreau/vl-jung.git</url>
+        <connection>scm:git:https://github.com:timboudreau/vl-jung.git</connection>
+        <developerConnection>git@github.com:timboudreau/vl-jung.git</developerConnection>
+    </scm>
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/timboudreau/vl-jung/issues</url>
+    </issueManagement>
+    <organization>
+        <name>Mastfrog Technologies</name>
+        <url>https://mastfrog.com</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>BSD-2-Clause</name>
+            <url>https://opensource.org/licenses/BSD-2-Clause</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <name>Maven Dependency Graph (JUNG fork)</name>
-    <url>http://github.com/timboudreau/vl-jung</url>
     <dependencies>
         <dependency>
-            <groupId>com.timboudreau</groupId>
+            <groupId>com.mastfrog</groupId>
             <artifactId>vl-jung</artifactId>
-            <version>${project.version}</version>
-            <type>jar</type>
-        </dependency>        
+        </dependency>
         <dependency>
             <groupId>org.netbeans.external</groupId>
             <artifactId>maven-dependency-tree-2.0</artifactId>
-            <version>2.34</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.netbeans.external</groupId>
             <artifactId>maven-artifact-3.0.4</artifactId>
-            <version>2.34</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.netbeans.external</groupId>
             <artifactId>maven-core-3.0.4</artifactId>
-            <version>2.34</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-core-multiview</artifactId>
-            <version>${netbeans.version}</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.netbeans.modules</groupId>
             <artifactId>org-netbeans-modules-maven-indexer</artifactId>
-            <version>${netbeans.version}</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.netbeans.external</groupId>
             <artifactId>maven-model-3.0.4</artifactId>
-            <version>2.34</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.netbeans.modules</groupId>
             <artifactId>org-netbeans-modules-maven</artifactId>
-            <version>${netbeans.version}</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <artifactId>org-netbeans-api-annotations-common</artifactId>
             <groupId>org.netbeans.api</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-modules</artifactId>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util</artifactId>
-            <version>${netbeans.version}</version>
         </dependency>
         <!--        <dependency>
             <groupId>org.netbeans.contrib.yenta</groupId>
@@ -86,70 +84,51 @@
         <dependency>
             <artifactId>org-openide-awt</artifactId>
             <groupId>org.netbeans.api</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <artifactId>org-openide-dialogs</artifactId>
             <groupId>org.netbeans.api</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <artifactId>org-openide-windows</artifactId>
             <groupId>org.netbeans.api</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <artifactId>org-netbeans-modules-maven-embedder</artifactId>
             <groupId>org.netbeans.modules</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <artifactId>org-netbeans-modules-projectapi</artifactId>
             <groupId>org.netbeans.api</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <artifactId>org-openide-filesystems</artifactId>
             <groupId>org.netbeans.api</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <artifactId>org-openide-loaders</artifactId>
             <groupId>org.netbeans.api</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <artifactId>sisu-inject-plexus</artifactId>
             <groupId>org.sonatype.sisu</groupId>
-            <type>jar</type>
-            <version>2.3.0</version>
         </dependency>
         <dependency>
             <artifactId>org-netbeans-modules-maven-model</artifactId>
             <groupId>org.netbeans.modules</groupId>
-            <type>jar</type>
-            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
+                <groupId>org.apache.netbeans.utilities</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>4.2</version>
                 <extensions>true</extensions>
                 <configuration>
                     <licenseName>BSD</licenseName>
@@ -166,11 +145,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.5.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

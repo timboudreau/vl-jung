@@ -41,7 +41,7 @@ public class GraphThemeImpl implements GraphTheme {
     private final Color fgBase;
 
     public GraphThemeImpl() {
-        this(new Color(80, 110, 240), new Color(130, 140, 230));
+        this(new Color(80, 110, 240), new Color(80, 80, 230));
     }
 
     public GraphThemeImpl(Color bgBase) {

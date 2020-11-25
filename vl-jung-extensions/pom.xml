@@ -1,27 +1,45 @@
-<?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">    
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.timboudreau</groupId>
+        <groupId>com.mastfrog</groupId>
         <artifactId>visual-library-jung</artifactId>
-        <version>1.0</version>
+        <version>2.0</version>
     </parent>
-    <groupId>com.timboudreau</groupId>
     <artifactId>vl-jung-extensions</artifactId>
-    <version>1.0</version>
+    <scm>
+        <url>git@github.com:timboudreau/vl-jung.git</url>
+        <connection>scm:git:https://github.com:timboudreau/vl-jung.git</connection>
+        <developerConnection>git@github.com:timboudreau/vl-jung.git</developerConnection>
+    </scm>
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/timboudreau/vl-jung/issues</url>
+    </issueManagement>
+    <organization>
+        <name>Mastfrog Technologies</name>
+        <url>https://mastfrog.com</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>BSD-2-Clause</name>
+            <url>https://opensource.org/licenses/BSD-2-Clause</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <version>2.0</version>
     <name>Visual Library Jung Base Classes</name>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.timboudreau</groupId>
+            <groupId>com.mastfrog</groupId>
             <artifactId>vl-jung</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

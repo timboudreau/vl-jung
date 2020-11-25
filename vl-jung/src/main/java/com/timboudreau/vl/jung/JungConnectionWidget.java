@@ -51,7 +51,7 @@ import org.netbeans.api.visual.widget.Widget;
  */
 public class JungConnectionWidget<V, E> extends Widget {
 
-    private Stroke stroke = new BasicStroke(2);
+    private Stroke stroke = new BasicStroke(4);
     private final E edge;
     private Function<E, Shape> transformer;
 
@@ -129,7 +129,7 @@ public class JungConnectionWidget<V, E> extends Widget {
     }
 
     public static <V, E> JungConnectionWidget<V, E> createQuadratic(JungScene<V, E> scene, E edge) {
-        return new JungConnectionWidget<V, E>(scene, EdgeShape.quadCurve(scene.graph), edge);
+        return new JungConnectionWidget<>(scene, EdgeShape.quadCurve(scene.graph), edge);
     }
 
     public static <V, E> JungConnectionWidget<V, E> createCubic(JungScene<V, E> scene, E edge) {
@@ -168,7 +168,7 @@ public class JungConnectionWidget<V, E> extends Widget {
         super(scene);
         this.edge = edge;
         this.transformer = transformer;
-        setForeground(new Color(190, 190, 255));
+        setForeground(new Color(0, 0, 180));
         setOpaque(false);
     }
 

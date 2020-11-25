@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.swing.JComponent;
 import org.netbeans.api.visual.action.ActionFactory;
 import org.netbeans.api.visual.action.WidgetAction;
@@ -76,9 +77,14 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
     private WidgetAction scrollZoom;
     private WidgetAction edgeClickSelect;
     private Dimension lastSize = new Dimension();
+    private final Supplier<GraphTheme> themeSupplier;
 
     public BaseJungScene(ObservableGraph<N, E> graph, Layout layout) throws IOException {
+        this(graph, layout, GraphThemeImpl::new);
+    }
+    public BaseJungScene(ObservableGraph<N, E> graph, Layout layout, Supplier<GraphTheme> themeSupplier) throws IOException {
         super(graph, layout);
+        this.themeSupplier = themeSupplier;
         colors = createColors();
         // Selection layer is behind everything
         addChild(selectionLayer);
@@ -111,7 +117,7 @@ public class BaseJungScene<N, E> extends JungScene<N, E> {
      * @return A theme
      */
     protected GraphTheme createColors() {
-        return new GraphThemeImpl();
+        return themeSupplier.get();
     }
 
     /**
