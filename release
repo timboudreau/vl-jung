@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e
+mvn clean
+mvn -Dmaven.test.skip.exec=true --activate-profiles release clean install javadoc:jar source:jar gpg:sign nexus-staging:deploy
