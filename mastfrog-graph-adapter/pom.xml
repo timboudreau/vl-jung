@@ -1,12 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.mastfrog</groupId>
         <artifactId>visual-library-jung</artifactId>
-        <version>2.0</version>
+        <version>2.2</version>
     </parent>
     <artifactId>mastfrog-graph-adapter</artifactId>
+    <description>Adapters to wrapper com.mastfrog:graph bit-set based graphs as JUNG graphs</description>
     <url>https://github.com:timboudreau/vl-jung</url>
     <name>Visual Library + Mastfrog Graph Adapters</name>
     <scm>
@@ -28,7 +30,15 @@
             <url>https://opensource.org/licenses/BSD-2-Clause</url>
             <distribution>repo</distribution>
         </license>
-    </licenses>    
+    </licenses>
+    <developers>
+        <developer>
+            <id>timboudreau</id>
+            <name>Tim Boudreau</name>
+            <url>https://timboudreau.com</url>
+            <email>tim+github@timboudreau.com</email>
+        </developer>
+    </developers>
     <dependencies>
         <dependency>
             <groupId>com.mastfrog</groupId>
