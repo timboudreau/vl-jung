@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.mastfrog</groupId>
         <artifactId>visual-library-jung</artifactId>
-        <version>2.2</version>
+        <version>2.3</version>
     </parent>
     <artifactId>mastfrog-graph-adapter</artifactId>
     <description>Adapters to wrapper com.mastfrog:graph bit-set based graphs as JUNG graphs</description>
@@ -40,6 +40,10 @@
         </developer>
     </developers>
     <dependencies>
+        <dependency>
+            <groupId>com.mastfrog</groupId>
+            <artifactId>abstractions</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.mastfrog</groupId>
             <artifactId>graph</artifactId>

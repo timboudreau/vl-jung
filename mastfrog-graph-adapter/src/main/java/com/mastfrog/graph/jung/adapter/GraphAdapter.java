@@ -25,13 +25,13 @@
  */
 package com.mastfrog.graph.jung.adapter;
 
+import com.mastfrog.abstractions.Wrapper;
 import com.mastfrog.abstractions.list.IndexedResolvable;
 import com.mastfrog.graph.IntGraph;
 import com.mastfrog.graph.ObjectGraph;
 import com.mastfrog.graph.ObjectGraphVisitor;
 import edu.uci.ics.jung.graph.DirectedGraph;
 import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.ObservableGraph;
 import edu.uci.ics.jung.graph.util.EdgeType;
 import edu.uci.ics.jung.graph.util.Pair;
 import java.util.Arrays;
@@ -342,7 +342,7 @@ public final class GraphAdapter {
         }
     }
 
-    static class WrappedObjectGraph<V, E> implements Graph<V, E> {
+    static class WrappedObjectGraph<V, E> implements Graph<V, E>, Wrapper<ObjectGraph<?>> {
 
         private final ObjectGraph<V> graph;
         private final EdgeFactory<V, E> edgeFactory;
@@ -350,6 +350,34 @@ public final class GraphAdapter {
         public WrappedObjectGraph(ObjectGraph<V> graph, EdgeFactory<V, E> edgeFactory) {
             this.graph = graph;
             this.edgeFactory = edgeFactory;
+        }
+
+        @Override
+        public ObjectGraph<?> wrapped() {
+            return graph;
+        }
+
+        @Override
+        public <F> F find(Class<? super F> what) {
+            if (IntGraph.class == what) {
+                IntGraph[] ig = new IntGraph[1];
+                graph.toIntGraph((ir, g) -> ig[0] = g);
+                return (F) what.cast(ig[0]);
+            }
+            return Wrapper.super.find(what);
+        }
+
+        @Override
+        public <F> boolean has(Class<? super F> what) {
+            if (IntGraph.class == what) {
+                return true;
+            }
+            return Wrapper.super.has(what);
+        }
+
+        @Override
+        public ObjectGraph<?> root() {
+            return graph;
         }
 
         @Override
@@ -641,7 +669,6 @@ public final class GraphAdapter {
         public int getEdgeCount(EdgeType edge_type) {
             return getEdges().size();
         }
-
 
     }
 

@@ -9,7 +9,7 @@ Watch [this video](http://timboudreau.com/blog/NetBeans_Visual_Library_Meets_JUN
 
 Visual Library is a standalone library which is part of NetBeans but can be used in standalone Java applications.  You don't have to be writing a NetBeans plugin to use this library!
 
-Builds and a Maven repository containing the JARs can be found [on timboudreau.com](http://timboudreau.com/builds/job/vl-jung).  [Read the Javadoc]([Javadoc here](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung/target/site/apidocs/index.html) and also [here](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung-extensions/target/site/apidocs/index.html) (there are two libraries).
+Builds can be found Maven Central.  [Read the Javadoc]([Javadoc here](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung/target/site/apidocs/index.html) and also [here](http://timboudreau.com/builds/job/vl-jung/lastSuccessfulBuild/artifact/vl-jung-extensions/target/site/apidocs/index.html) (there are two libraries).
 
 Features
 --------
@@ -35,9 +35,9 @@ The project consists of a Maven parent project with four child projects:
 Build & Run
 -----------
 
-The easy way to use these libraries is via Maven, using [this Maven repository](http://timboudreau.com/builds) - follow the link for a ``&lt;repository&gt;`` section to add to your POM.
+The easy way to use these libraries is via Maven, using the binaries from Maven Central.
 
-To build the projects, simply check the sources out from Git and build with Maven using JDK 7 or greater.
+To build the projects, simply check the sources out from Git and build with Maven using JDK 8 or greater.
 
 
 License
