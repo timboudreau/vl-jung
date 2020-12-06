@@ -15,6 +15,7 @@
         <netbeans.version>RELEASE113</netbeans.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <guava.version>[24.1.1,)</guava.version>
+        <version.slf4j>1.7.25</version.slf4j>
         <junit.version>4.13.1</junit.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -64,6 +65,11 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${version.slf4j}</version>
             </dependency>
             <dependency>
                 <groupId>org.netbeans.api</groupId>
