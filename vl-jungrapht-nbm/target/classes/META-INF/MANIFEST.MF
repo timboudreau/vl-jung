@@ -1,0 +1,31 @@
+Manifest-Version: 1.0
+OpenIDE-Module-Localizing-Bundle: com/timboudreau/vl/jungrapht/nbm/Bun
+ dle.properties
+OpenIDE-Module-Specification-Version: 2.3
+OpenIDE-Module-Implementation-Version: 2.3
+AutoUpdate-Show-In-Client: false
+OpenIDE-Module-Build-Version: 202012072056
+OpenIDE-Module: com.mastfrog.vl.jungrapht.nbm
+OpenIDE-Module-Public-Packages: com.timboudreau.vl.jungrapht.*, com.ti
+ mboudreau.vl.jungrapht.nbm.*, com.timboudreau.vl.jungrapht.extensions
+ .*, org.jungrapht.**
+OpenIDE-Module-Requires: org.openide.modules.ModuleFormat1
+OpenIDE-Module-Display-Category: com.mastfrog
+OpenIDE-Module-Name: Visual Library + JUNG NetBeans Module Wrapper
+OpenIDE-Module-Short-Description: Parent project for Visual-Library + 
+ JUNG integration
+OpenIDE-Module-Long-Description: Parent project for Visual-Library + J
+ UNG integration
+X-Class-Path: ext/com.mastfrog.vl-jungrapht-nbm/com-mastfrog/vl-jungra
+ pht.jar ext/com.mastfrog.vl-jungrapht-nbm/com-github-tomnelson/jungra
+ pht-layout.jar ext/com.mastfrog.vl-jungrapht-nbm/com-github-tomnelson
+ /jungrapht-visualization.jar ext/com.mastfrog.vl-jungrapht-nbm/com-ma
+ stfrog/vl-jungrapht-extensions.jar
+Maven-Class-Path: com.mastfrog:vl-jungrapht:2.3 com.github.tomnelson:j
+ ungrapht-layout:1.0 com.github.tomnelson:jungrapht-visualization:1.0 
+ com.mastfrog:vl-jungrapht-extensions:2.3
+OpenIDE-Module-Module-Dependencies: org.openide.util > 9.14, org.openi
+ de.util.lookup > 8.40, org.netbeans.api.visual > 2.55, com.google.gua
+ va > 30.0.0, slf4j.api > 1.7.25, org.jgrapht.core > 1.5.0, org.jgraph
+ t.io > 1.5.0
+

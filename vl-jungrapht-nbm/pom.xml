@@ -1,13 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.mastfrog</groupId>
         <artifactId>visual-library-jung</artifactId>
         <version>2.3</version>
     </parent>
-    <artifactId>vl-jung-nbm</artifactId>
+
+    <artifactId>vl-jungrapht-nbm</artifactId>
     <packaging>nbm</packaging>
     <url>https://github.com:timboudreau/vl-jung</url>
     <name>Visual Library + JUNG NetBeans Module Wrapper</name>
@@ -39,20 +39,16 @@
             <email>tim+github@timboudreau.com</email>
         </developer>
     </developers>
-    <properties>
-        <version.slf4j>1.7.25</version.slf4j>
-        <version.jgrapht>1.5.0</version.jgrapht>
-    </properties>
     <dependencies>
         <dependency>
-            <groupId>org.jgrapht</groupId>
-            <artifactId>jgrapht-core</artifactId>
-            <version>${version.jgrapht}</version>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util</artifactId>
+            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${version.slf4j}</version>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-netbeans-api-annotations-common</artifactId>
+            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
@@ -76,32 +72,28 @@
             <artifactId>guava</artifactId>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>vl-jung</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>vl-jung-extensions</artifactId>
+            <artifactId>vl-jungrapht</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>net.sf.jung</groupId>
-            <artifactId>jung-api</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>vl-jungrapht-extensions</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>net.sf.jung</groupId>
-            <artifactId>jung-graph-impl</artifactId>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>${version.jgrapht}</version>
         </dependency>
         <dependency>
-            <groupId>net.sf.jung</groupId>
-            <artifactId>jung-algorithms</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.sf.jung</groupId>
-            <artifactId>jung-visualization</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.sf.jung</groupId>
-            <artifactId>jung-io</artifactId>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-io</artifactId>
+            <version>${version.jgrapht}</version>
         </dependency>
     </dependencies>
     <build>
@@ -116,10 +108,10 @@
                     <useOSGiDependencies>true</useOSGiDependencies>
                     <Nbm-Maven-Plugin-Autoload>true</Nbm-Maven-Plugin-Autoload>
                     <publicPackages>
-                        <publicPackage>com.timboudreau.vl.jung</publicPackage>
-                        <publicPackage>com.timboudreau.vl.jung.nbm</publicPackage>
-                        <publicPackage>com.timboudreau.vl.jung.extensions</publicPackage>
-                        <publicPackage>edu.uci.ics.jung.*</publicPackage>
+                        <publicPackage>com.timboudreau.vl.jungrapht</publicPackage>
+                        <publicPackage>com.timboudreau.vl.jungrapht.nbm</publicPackage>
+                        <publicPackage>com.timboudreau.vl.jungrapht.extensions</publicPackage>
+                        <publicPackage>org.jungrapht.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>

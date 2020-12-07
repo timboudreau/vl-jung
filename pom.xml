@@ -11,6 +11,9 @@
     <url>https://github.com:timboudreau/vl-jung</url>
     <properties>
         <jung.version>2.1.1</jung.version>
+        <version.slf4j>1.7.25</version.slf4j>
+        <version.jgrapht>1.5.0</version.jgrapht>
+        <version.jungrapht>1.0</version.jungrapht>
         <netbeans.hint.license>bsd</netbeans.hint.license>
         <netbeans.version>RELEASE113</netbeans.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -29,6 +32,11 @@
         <!--<module>maven-dependency-graph-fork</module>-->
         <module>mastfrog-graph-adapter</module>
         <module>alternate-layouts</module>
+        <module>vl-jungrapht</module>
+        <module>vl-jungrapht-extensions</module>
+        <module>vl-jungrapht-demo</module>
+        <module>vl-jungrapht-nbm</module>
+        <module>mastfrog-jgrapht-adapter</module>
     </modules>
     <scm>
         <url>git@github.com:timboudreau/vl-jung.git</url>
@@ -61,6 +69,26 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>${version.jgrapht}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.tomnelson</groupId>
+                <artifactId>jungrapht-layout</artifactId>
+                <version>${version.jungrapht}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.tomnelson</groupId>
+                <artifactId>jungrapht-visualization</artifactId>
+                <version>${version.jungrapht}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${version.slf4j}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
@@ -83,6 +111,11 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>vl-jung-demo</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>vl-jungrapht-demo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
