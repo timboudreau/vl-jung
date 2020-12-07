@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?><module codename="com.mastfrog.vl.jungrapht.nbm">
+    <module_version install_time="1607374598670" last="true" origin="installer" specification_version="2.3">
+        <file crc="616974820" name="config/Modules/com-mastfrog-vl-jungrapht-nbm.xml"/>
+        <file crc="2553997697" name="modules/com-mastfrog-vl-jungrapht-nbm.jar"/>
+        <file crc="102060281" name="modules/ext/com.mastfrog.vl-jungrapht-nbm/com-github-tomnelson/jungrapht-layout.jar"/>
+        <file crc="1644144095" name="modules/ext/com.mastfrog.vl-jungrapht-nbm/com-github-tomnelson/jungrapht-visualization.jar"/>
+        <file crc="672763945" name="modules/ext/com.mastfrog.vl-jungrapht-nbm/com-mastfrog/vl-jungrapht-extensions.jar"/>
+        <file crc="219680394" name="modules/ext/com.mastfrog.vl-jungrapht-nbm/com-mastfrog/vl-jungrapht.jar"/>
+    </module_version>
+</module>
